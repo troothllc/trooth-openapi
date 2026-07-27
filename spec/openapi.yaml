@@ -1,0 +1,346 @@
+openapi: 3.1.0
+info:
+  title: Trooth OS API
+  version: "2026-08-02"
+  summary: Compliance infrastructure for AI — witnessed, never signed.
+  description: |
+    One API across the three Trooth OS pillars — PROTECT, PROVE, GROW — spanning
+    nine capabilities. Public reads need no key; authenticated writes and monitoring
+    use a Bearer token issued with your plan.
+
+    Boundary, enforced in every response and never softened: Trooth automates.
+    Trooth never signs your claims for you, and never certifies compliance. Every
+    value here is *witnessed* evidence — what a scan observed, cryptographically
+    anchored — not an attestation and not a certification. Consumers confirm
+    independently; the `advisory` flag is always true.
+  contact: { name: Trooth, url: https://trooth.co, email: hello@trooth.co }
+  license: { name: Terms of Service, url: https://trooth.co/terms }
+
+servers:
+  - url: https://api.trooth.co
+    description: Production
+
+tags:
+  - name: PROTECT · GRC Automation
+    description: Continuous control monitoring against SOC 2, ISO 27001, EU AI Act, NIST AI RMF, HIPAA.
+  - name: PROTECT · AI Security Posture
+    description: Model, data, and pipeline exposure scanning for AI systems.
+  - name: PROTECT · AI Governance
+    description: AI system inventory, risk classification, and policy conformance.
+  - name: PROVE · Trust Center
+    description: The public, signed Trust Profile any buyer can read with no login.
+  - name: PROVE · Questionnaire Auto-Answer
+    description: Draft security-questionnaire answers from witnessed evidence.
+  - name: PROVE · Evidence Dossier
+    description: Export the signed evidence behind any control.
+  - name: GROW · Trooth Network
+    description: Discover and compare companies by witnessed posture.
+  - name: GROW · Professional Directory
+    description: Directory of witnessed companies and practitioners.
+  - name: GROW · Marketplace Leads
+    description: Buyer-intent leads sourced from profile views and requests.
+  - name: Webhooks
+    description: Signed state-change events delivered to your endpoint.
+
+x-pillars:
+  PROTECT: [GRC Automation, AI Security Posture, AI Governance]
+  PROVE: [Trust Center, Questionnaire Auto-Answer, Evidence Dossier]
+  GROW: [Trooth Network, Professional Directory, Marketplace Leads]
+
+paths:
+  # ---------------- PROVE · Trust Center (public) ----------------
+  /public/trust/{slug}:
+    get:
+      tags: [PROVE · Trust Center]
+      operationId: getPublicTrustProfile
+      summary: Get a company's public Trust Profile
+      description: Signed, public posture for any company by slug — tier, Trust Score, framework coverage, last witnessed time. No key. `acme-ai` is a live sample.
+      security: []
+      parameters: [{ $ref: '#/components/parameters/slug' }]
+      responses:
+        "200": { description: Signed Trust Profile., content: { application/json: { schema: { $ref: '#/components/schemas/TrustProfile' } } } }
+        "202": { $ref: '#/components/responses/NotYetWitnessed' }
+        "404": { $ref: '#/components/responses/NotFound' }
+        "429": { $ref: '#/components/responses/RateLimited' }
+        "500": { $ref: '#/components/responses/ServerError' }
+
+  # ---------------- PROTECT · GRC Automation ----------------
+  /v1/grc/scan:
+    post:
+      tags: [PROTECT · GRC Automation]
+      operationId: createGrcScan
+      summary: Run an advisory GRC control scan
+      description: Evaluate a plan/target against a framework's controls. Report-only; never applies changes, never signs. Scaffold mode until 2026-08-02 (returns `pending`).
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ScanRequest' } } } }
+      responses:
+        "200": { description: Scan result., content: { application/json: { schema: { $ref: '#/components/schemas/ScanResult' } } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "429": { $ref: '#/components/responses/RateLimited' }
+        "500": { $ref: '#/components/responses/ServerError' }
+  /v1/grc/controls:
+    get:
+      tags: [PROTECT · GRC Automation]
+      operationId: listGrcControls
+      summary: List controls and witnessed status
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: framework, in: query, schema: { type: string, enum: [soc2, iso27001, eu_ai_act, nist_ai_rmf, hipaa] } }]
+      responses:
+        "200": { description: Controls with witnessed status., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Control' } } } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+
+  # ---------------- PROTECT · AI Security Posture ----------------
+  /v1/ai-security/scan:
+    post:
+      tags: [PROTECT · AI Security Posture]
+      operationId: createAiSecurityScan
+      summary: Scan an AI system's security posture
+      description: Advisory exposure scan across model, data, and pipeline surfaces. Report-only.
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AiSystemRef' } } } }
+      responses:
+        "200": { description: Findings., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Finding' } } } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "429": { $ref: '#/components/responses/RateLimited' }
+
+  # ---------------- PROTECT · AI Governance ----------------
+  /v1/ai-governance/inventory:
+    get:
+      tags: [PROTECT · AI Governance]
+      operationId: getAiInventory
+      summary: AI system inventory with risk classification
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Inventory., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/AiSystem' } } } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+
+  # ---------------- PROVE · Questionnaire Auto-Answer ----------------
+  /v1/questionnaire/answer:
+    post:
+      tags: [PROVE · Questionnaire Auto-Answer]
+      operationId: answerQuestionnaire
+      summary: Draft answers from witnessed evidence
+      description: Returns draft answers grounded in witnessed evidence, each with a citation. Drafts only — you review and send; Trooth never submits or signs on your behalf.
+      security: [{ bearerAuth: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/QuestionnaireRequest' } } } }
+      responses:
+        "200": { description: Draft answers with evidence citations., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/DraftAnswer' } } } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "202": { $ref: '#/components/responses/NotYetWitnessed' }
+
+  # ---------------- PROVE · Evidence Dossier ----------------
+  /v1/evidence/{control}:
+    get:
+      tags: [PROVE · Evidence Dossier]
+      operationId: getEvidence
+      summary: Signed evidence behind a control
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: control, in: path, required: true, schema: { type: string, example: soc2.cc6.1 } }]
+      responses:
+        "200": { description: Evidence dossier., content: { application/json: { schema: { $ref: '#/components/schemas/EvidenceDossier' } } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "404": { $ref: '#/components/responses/NotFound' }
+        "202": { $ref: '#/components/responses/NotYetWitnessed' }
+
+  # ---------------- GROW · Trooth Network (public) ----------------
+  /public/network/search:
+    get:
+      tags: [GROW · Trooth Network]
+      operationId: searchNetwork
+      summary: Search companies by witnessed posture
+      security: []
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: framework, in: query, schema: { type: string } }
+        - { name: min_score, in: query, schema: { type: integer, minimum: 0, maximum: 100 } }
+      responses:
+        "200": { description: Matching public profiles., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/TrustProfile' } } } } }
+        "429": { $ref: '#/components/responses/RateLimited' }
+
+  # ---------------- GROW · Professional Directory (public) ----------------
+  /public/directory:
+    get:
+      tags: [GROW · Professional Directory]
+      operationId: listDirectory
+      summary: Directory of witnessed companies
+      security: []
+      parameters: [{ name: category, in: query, schema: { type: string } }, { name: cursor, in: query, schema: { type: string } }]
+      responses:
+        "200": { description: Directory page., content: { application/json: { schema: { $ref: '#/components/schemas/DirectoryPage' } } } }
+
+  # ---------------- GROW · Marketplace Leads ----------------
+  /v1/marketplace/leads:
+    get:
+      tags: [GROW · Marketplace Leads]
+      operationId: listLeads
+      summary: Buyer-intent leads from profile activity
+      description: Leads sourced from `profile.viewed` and `profile.requested` signals on your Trust Profile. Buyer demand, surfaced — you decide what to do with it.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Leads., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Lead' } } } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+
+webhooks:
+  troothEvent:
+    post:
+      tags: [Webhooks]
+      operationId: onTroothEvent
+      summary: Trooth → your endpoint (signed)
+      description: |
+        Trooth POSTs a JSON event on state changes. Every delivery is signed:
+        `X-Trooth-Signature` is an HMAC-SHA256 (hex) of the raw request body, keyed
+        with your endpoint signing secret. Recompute and compare in constant time
+        before trusting a payload.
+      parameters: [{ name: X-Trooth-Signature, in: header, required: true, schema: { type: string } }]
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/WebhookEvent' } } } }
+      responses: { "2XX": { description: Acknowledge within 5s or delivery retries. } }
+
+components:
+  parameters:
+    slug:
+      name: slug
+      in: path
+      required: true
+      description: Company slug, e.g. `acme-ai`.
+      schema: { type: string, pattern: "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$" }
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: "API key issued with your plan. Header: `Authorization: Bearer <key>`."
+
+  responses:
+    NotYetWitnessed:
+      description: Pending claim — the slug exists but has no witnessed evidence yet. Degrades to a pending state, never a false pass.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: not_yet_witnessed, message: "Claimed but not yet witnessed.", state: pending } } }
+    NotFound:
+      description: No resource for this identifier.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: not_found, message: "No profile for slug 'unknown-co'." } } }
+    RateLimited:
+      description: Plan rate limit exceeded.
+      headers: { Retry-After: { schema: { type: integer } }, X-RateLimit-Remaining: { schema: { type: integer } } }
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: rate_limited, message: "Rate limit exceeded for your plan.", retry_after: 30 } } }
+    ServerError:
+      description: Unexpected server error (5xx). Safe to retry with backoff.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: server_error, message: "Something went wrong on our end." } } }
+    Unauthorized:
+      description: Missing or invalid Bearer token.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: unauthorized, message: "Provide a valid API key." } } }
+
+  schemas:
+    TrustProfile:
+      type: object
+      required: [profile, tier, trust_score, state, advisory]
+      properties:
+        profile: { type: string }
+        name: { type: string }
+        tier: { type: string, enum: [bronze, silver, gold, enterprise] }
+        trust_score: { type: integer, minimum: 0, maximum: 100 }
+        state: { type: string, enum: [witnessed, pending] }
+        frameworks: { type: array, items: { $ref: '#/components/schemas/FrameworkCoverage' } }
+        last_witnessed: { type: [string, "null"], format: date-time }
+        signature: { type: string, description: Detached signature; verify with @trooth/verifier. }
+        advisory: { type: boolean, const: true }
+    FrameworkCoverage:
+      type: object
+      properties:
+        id: { type: string, enum: [soc2, iso27001, eu_ai_act, nist_ai_rmf, hipaa] }
+        coverage: { type: number, minimum: 0, maximum: 1 }
+    Control:
+      type: object
+      properties:
+        id: { type: string, example: soc2.cc6.1 }
+        framework: { type: string }
+        witnessed: { type: boolean }
+        last_witnessed: { type: [string, "null"], format: date-time }
+    ScanRequest:
+      type: object
+      properties:
+        plan: { type: object, description: Plan/target to evaluate (e.g. a Terraform plan JSON). }
+        framework: { type: string, enum: [soc2, iso27001, eu_ai_act, nist_ai_rmf, hipaa] }
+        fail_on: { type: string, enum: [none, low, medium, high, critical], default: none }
+    ScanResult:
+      type: object
+      properties:
+        id: { type: string, example: scan_01J8Z9K2QH4B7C }
+        state: { type: string, enum: [witnessed, pending] }
+        trust_score: { type: integer }
+        findings: { type: array, items: { $ref: '#/components/schemas/Finding' } }
+        advisory: { type: boolean, const: true }
+    Finding:
+      type: object
+      properties:
+        control: { type: string, example: soc2.cc6.1 }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        witnessed: { type: boolean }
+        detail: { type: string }
+    AiSystemRef:
+      type: object
+      properties: { system_id: { type: string }, surfaces: { type: array, items: { type: string, enum: [model, data, pipeline] } } }
+    AiSystem:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        risk_class: { type: string, enum: [minimal, limited, high, unacceptable], description: EU AI Act risk classification. }
+        owner: { type: string }
+    QuestionnaireRequest:
+      type: object
+      properties: { questions: { type: array, items: { type: string } }, profile: { type: string } }
+    DraftAnswer:
+      type: object
+      properties:
+        question: { type: string }
+        answer: { type: string }
+        evidence: { type: array, items: { type: string, example: soc2.cc6.1 } }
+        review_required: { type: boolean, const: true, description: You review and send. Trooth never submits. }
+    EvidenceDossier:
+      type: object
+      properties:
+        control: { type: string }
+        witnessed_at: { type: [string, "null"], format: date-time }
+        artifacts: { type: array, items: { type: object, properties: { kind: { type: string }, hash: { type: string }, source: { type: string } } } }
+        signature: { type: string }
+    DirectoryPage:
+      type: object
+      properties: { items: { type: array, items: { $ref: '#/components/schemas/TrustProfile' } }, next_cursor: { type: [string, "null"] } }
+    Lead:
+      type: object
+      properties:
+        id: { type: string }
+        signal: { type: string, enum: [profile.viewed, profile.requested] }
+        buyer_hint: { type: string }
+        created: { type: integer }
+    WebhookEvent:
+      type: object
+      required: [id, type, created, api_version, data]
+      properties:
+        id: { type: string, example: evt_01J8Z9K2QH4B7C }
+        type: { type: string, enum: [trust.score.changed, control.witnessed, profile.viewed, profile.requested], description: "`control.verified` accepted as a legacy alias for `control.witnessed`." }
+        created: { type: integer }
+        api_version: { type: string, example: "2026-08-02" }
+        data: { type: object, properties: { object: { oneOf: [ { $ref: '#/components/schemas/ScoreChanged' }, { $ref: '#/components/schemas/ControlWitnessed' }, { $ref: '#/components/schemas/ProfileViewed' } ] } } }
+      example:
+        id: evt_01J8Z9K2QH4B7C
+        type: trust.score.changed
+        created: 1785340800
+        api_version: "2026-08-02"
+        data: { object: { profile: acme-ai, previous_score: 78, current_score: 84, tier: silver, changed_controls: [soc2.cc6.1] } }
+    ScoreChanged:
+      type: object
+      properties: { profile: { type: string }, previous_score: { type: integer }, current_score: { type: integer }, tier: { type: string }, changed_controls: { type: array, items: { type: string } } }
+    ControlWitnessed:
+      type: object
+      properties: { profile: { type: string }, control: { type: string }, witnessed_at: { type: string, format: date-time }, source: { type: string } }
+    ProfileViewed:
+      type: object
+      properties: { profile: { type: string }, viewer_type: { type: string, enum: [buyer, anonymous] }, viewed_at: { type: string, format: date-time } }
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error: { type: string, enum: [not_found, not_yet_witnessed, rate_limited, server_error, unauthorized] }
+        message: { type: string }
+        state: { type: string }
+        retry_after: { type: integer }

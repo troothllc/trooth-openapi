@@ -1,0 +1,18 @@
+name: spec-lint
+on:
+  push: { paths: ["spec/**", ".github/workflows/spec-lint.yml"] }
+  pull_request: { paths: ["spec/**"] }
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate OpenAPI 3.1
+        run: |
+          python3 -m pip install --quiet openapi-spec-validator pyyaml
+          python3 - <<'PY'
+          import yaml
+          from openapi_spec_validator import validate
+          validate(yaml.safe_load(open("spec/openapi.yaml")))
+          print("OpenAPI 3.1 valid")
+          PY
