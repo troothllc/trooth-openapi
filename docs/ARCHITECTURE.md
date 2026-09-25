@@ -1,68 +1,69 @@
 # Architecture
 
-Three pillars, nine capabilities, one witness layer. Every capability writes to and
-reads from the same signed evidence store; the public surface exposes only what a
-company has chosen to publish.
+The Trooth Network is Trooth's only product: one public, signed, machine-readable
+record per company. Two hosts serve it, and each has its own published contract.
+This page names them and points at those contracts. It does not restate them, and
+where it disagrees with one of them, the contract is right.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'IBM Plex Mono, monospace','clusterBkg':'#f6f2e9','clusterBorder':'#0b0e14','titleColor':'#0b0e14','textColor':'#0b0e14','lineColor':'#0b0e14'}}}%%
 flowchart TB
-  subgraph PROTECT["PROTECT · reduce risk"]
-    A1[GRC Automation]:::c
-    A2[AI Security Posture]:::c
-    A3[AI Governance]:::c
-  end
-  subgraph PROVE["PROVE · show proof"]
-    B1[Trust Center]:::c
-    B2[Questionnaire Auto-Answer]:::c
-    B3[Evidence Dossier]:::c
-  end
-  subgraph GROW["GROW · win deals"]
-    C1[Trooth Network]:::c
-    C2[Professional Directory]:::c
-    C3[Marketplace Leads]:::c
-  end
+  WEB["trooth.co · nine public GET operations, no key · contract: trooth.co/openapi.json"]:::api
+  API["api.trooth.co · a separate service · public Trust Profile read, two Bearer-token operations, MCP server at /public/mcp · contract: trooth.co/openapi.yaml"]:::api
+  API -- "MCP tool trooth_public_trust_profile reads GET /api/network/profile" --> WEB
+  API --> HOOK["Signed webhooks to endpoints a company registers in its workspace"]:::dark
 
-  PROTECT --> W
-  PROVE --> W
-  GROW --> W
-  W["Witness layer · HMAC-signed evidence, append-only"]:::w
-  W --> API{{"api.trooth.co · public reads · authed writes"}}:::api
-  API --> PUB["Public Trust Profile / Network / Directory - no login"]:::dark
-  API --> HOOK["Signed webhooks · trust.score.changed · control.witnessed · profile.viewed"]:::dark
-
-  classDef c fill:#0b0e14,stroke:#d97706,stroke-width:1.5px,color:#f6f2e9;
-  classDef w fill:#0b0e14,stroke:#f6f2e9,stroke-width:1.5px,color:#f6f2e9;
   classDef api fill:#d97706,stroke:#0b0e14,stroke-width:1.5px,color:#0b0e14;
   classDef dark fill:#161a24,stroke:#d97706,color:#f6f2e9;
-  style PROTECT fill:#f6f2e9,stroke:#0b0e14,stroke-width:1px,color:#0b0e14
-  style PROVE fill:#f6f2e9,stroke:#0b0e14,stroke-width:1px,color:#0b0e14
-  style GROW fill:#f6f2e9,stroke:#0b0e14,stroke-width:1px,color:#0b0e14
 ```
 
 ## Trust boundary
 
-The witness layer records what a scan observed and signs it. It does not assert that a
-claim is true — it asserts that, at a point in time, evidence was witnessed. The
-`advisory: true` flag rides on every payload. A buyer confirms independently using the
-open-source verifier; Trooth is never in the position of certifying compliance or
-signing a customer's claim.
+Trooth signs what it witnessed. It never signs on a company's behalf. A witnessed
+value says what a reading found, from a named source, on a stated date. It does not
+say that a company's claim is true. What a company says about itself is declared or
+attested by the company, and it is kept apart from what Trooth witnessed and from
+public record.
+
+No response carries a figure, a rank or a grade for a company. Neither `witnessed`
+nor `updatedAt` is an audit opinion, and a caller restating either one elsewhere
+must carry the limits in the `methodology` object with it. The public read carries
+no signature today, so a caller cannot check Trooth's signature from it. Trooth's
+public signing keys are listed at
+[trooth.co/verify/keys](https://trooth.co/verify/keys).
 
 ## Data flow, end to end
 
-1. A vendor runs a scan (`/v1/grc/scan`, the GitHub Action, or the CLI). PROTECT
-   capabilities emit findings.
-2. Findings are witnessed and signed into the append-only evidence store (witness layer).
-3. PROVE capabilities render that evidence: the public Trust Profile, questionnaire
-   drafts, and per-control dossiers — each carrying its signature.
-4. GROW capabilities index published profiles: the Network, the Directory, and the
-   buyer-intent leads that profile activity generates.
-5. State changes emit signed webhooks so downstream systems stay current without polling.
+1. A company publishes its record on the Network
+   ([trooth.co/get-started](https://trooth.co/get-started)).
+2. Trooth reads the company's public surface on an hourly cadence and records each
+   reading. `GET /api/network/profile` on trooth.co returns the result in its
+   `witnessed` block: the `standing` field (the API's name for the witnessed state,
+   either `witnessed` or null), the first and the most recent reading,
+   `checksPassed` out of `checksRun` (checks that read as expected, out of checks
+   run) and the unbroken run of readings. Every response also carries a
+   `methodology` object that states the cadence, the gap tolerance, the retention
+   period, the freshness windows and what Trooth does not read.
+3. Anyone can read a record with no credential: through the nine public operations
+   on trooth.co, through `GET /public/trust/{slug}` on api.trooth.co, or through the
+   MCP server at `https://api.trooth.co/public/mcp`, whose `trooth_public_trust_profile` tool
+   reads the trooth.co profile.
+4. A company that registers a webhook endpoint in its workspace receives signed
+   events from api.trooth.co. The `x-trooth-signature` header is the HMAC-SHA256 of
+   the raw request body, keyed with the endpoint's signing secret. Trooth makes one
+   attempt per event and does not retry on its own, and no timestamp is signed on
+   this channel, so a receiver deduplicates on the event `id`. The files in
+   `examples/` check this channel only. Alert destinations are a second channel,
+   delivered by the Trooth application, and they sign a timestamp and the body
+   under a different scheme, described at
+   [trooth.co/docs#webhooks](https://trooth.co/docs#webhooks).
 
-## Why one platform, not nine repos
+## Where the contracts are kept
 
-Stripe, Plaid, and Vanta ship a single canonical spec plus a small set of real SDKs —
-not one repository per feature. A capability is a module behind the same contract, the
-same auth, and the same witness guarantees. Splitting them into nine repos would
-fragment the schema, duplicate auth, and dilute the one thing developers actually want:
-a single source of truth they can import and trust.
+The contracts are produced where the routes live, not in this repository.
+trooth.co/openapi.json says it is generated from the website's `app/api` tree, and
+that a build gate fails when the document and the source disagree.
+trooth.co/openapi.yaml describes the service at api.trooth.co, and its own change
+record says each of its paths was traced to the handler that serves it on
+2026-09-03. Where a file in this repository disagrees with either served contract,
+the served contract is right.

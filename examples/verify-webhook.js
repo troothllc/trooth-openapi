@@ -1,4 +1,5 @@
-// Verify an X-Trooth-Signature webhook (Node 18+). Constant-time compare on the RAW body.
+// Verify an X-Trooth-Signature webhook sent from api.trooth.co (Node 18+). Constant-time compare on the RAW body.
+// Alert destinations sign a timestamp and the body under a different scheme, and this check rejects them: https://trooth.co/docs#webhooks
 import crypto from "node:crypto";
 
 export function verifyTrooth(rawBody, signature, secret) {
@@ -7,11 +8,11 @@ export function verifyTrooth(rawBody, signature, secret) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-// Express example — note express.raw so you hash the exact bytes Trooth signed.
+// Express example: note express.raw so you hash the exact bytes Trooth signed.
 // app.post("/webhooks/trooth", express.raw({ type: "application/json" }), (req, res) => {
 //   if (!verifyTrooth(req.body, req.get("X-Trooth-Signature"), process.env.TROOTH_WEBHOOK_SECRET))
 //     return res.status(400).send("bad signature");
 //   const event = JSON.parse(req.body.toString("utf8"));
-//   if (event.type === "trust.score.changed") { /* ... */ }
+//   if (event.type === "witness.changed") { /* ... */ }
 //   res.sendStatus(200);
 // });

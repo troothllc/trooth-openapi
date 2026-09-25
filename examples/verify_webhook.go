@@ -1,4 +1,5 @@
-// Verify an X-Trooth-Signature webhook (Go). Constant-time compare on the RAW body.
+// Verify an X-Trooth-Signature webhook sent from api.trooth.co (Go). Constant-time compare on the RAW body.
+// Alert destinations sign a timestamp and the body under a different scheme, and this check rejects them: https://trooth.co/docs#webhooks
 package trooth
 
 import (

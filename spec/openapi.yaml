@@ -1,18 +1,167 @@
+# ---------------------------------------------------------------------------
+# WHAT THIS DOCUMENT PROMISED THAT DID NOT EXIST, AND WHAT WAS DONE ABOUT IT.
+#
+# Reviewed against the worker source on 2026-09-03. Every path was traced to the
+# handler that serves it in trooth-os-worker-f, the only worker holding the
+# api.trooth.co routes /public/* and /v1/*. Seven of the ten paths this file
+# published had no handler anywhere. A developer who copied one of them got a
+# 404 as their first impression of the API.
+#
+# REMOVED, BECAUSE NOTHING SERVES THEM.
+#
+#   POST /v1/grc/scan
+#     There is no /v1/grc mount. The path was never served by any worker, it
+#     demanded a bearer token nothing reads, and its documented body was a shape
+#     nothing accepts.
+#
+#   GET /v1/grc/controls
+#     Same missing mount. The nearest real route, GET /v1/ai-gov/controls, holds
+#     AI governance controls, not SOC 2 or ISO 27001 framework controls, so it
+#     is not this operation under another name.
+#
+#   POST /v1/ai-security/scan
+#     There is no /v1/ai-security mount. The nearest real route, POST
+#     /v1/ai-spm/scan, screens a block of text for secrets, personal data and
+#     prompt injection and takes {text, mode}. That is a different operation,
+#     not this one renamed.
+#
+#   GET /v1/ai-governance/inventory
+#     There is no /v1/ai-governance mount, and the AI governance router that
+#     does exist has no inventory route.
+#
+#   GET /v1/evidence/{control}
+#     The /v1/evidence router serves a list, an attest, an upload, a webhook
+#     ingest, a file fetch and a delete. It has no handler keyed by a control
+#     identifier. This one is worth reading twice: probing it live answers 401,
+#     not 404, because the router's auth guard runs before route matching. A
+#     caller holding a valid key gets the 404. The live status code was
+#     misleading and the source settled it.
+#
+#   GET /public/network/search
+#     No handler. A similar public search does exist at GET
+#     /public/marketplace/search, but it reads q and limit rather than framework
+#     and a threshold, and it returns a slug, a name and a category rather
+#     than profiles. Publishing it here would have meant writing a new contract
+#     rather than correcting a name, so it is left out until someone designs it
+#     deliberately.
+#
+#   GET /public/directory
+#     No handler. GET /public/pros is a directory of individual professionals,
+#     not of companies, so it is not this operation renamed.
+#
+# Removed with them, having nothing left to describe: ScanRequest, ScanResult,
+# Control, Finding, AiSystemRef, AiSystem, EvidenceDossier, DirectoryPage and
+# FrameworkCoverage. The seven capability tags that no longer carry an operation
+# and the x-pillars block went with them: they described a product surface, and
+# inside a contract they read as endpoints on offer.
+#
+# THE THREE PATHS THAT SURVIVED WERE ALSO WRONG IN THEIR BODIES, which is the
+# same defect as a path that does not exist. Every schema below was rewritten
+# from the handler that produces it and confirmed against the live host wherever
+# the route is public.
+#
+#   TrustProfile claimed a figure, a framework coverage array, a detached
+#   signature and an advisory flag. The response carries none of them. No
+#   figure is published for a company at all; the handler sends the date of
+#   the most recent reading and nothing else.
+#
+#   The Trust Profile description offered acme-ai as an illustrative sample. The
+#   handler has no reserved sample slug and answers 404 for it. The whole
+#   invented-company branch was deleted from the worker; the claim outlived it.
+#
+#   The 202 not-yet-witnessed and 429 rate-limited responses were documented on
+#   routes that never return them. None of the three surviving routes is rate
+#   limited, and none answers 202.
+#
+#   QuestionnaireRequest declared a profile field the validator never reads, and
+#   omitted the phrase query parameter the route does read. Its response is an
+#   object with counts, not a bare array.
+#
+#   Lead described buyer-intent signals named profile.viewed and
+#   profile.requested. The rows are the buyer contact details submitted through
+#   POST /public/marketplace/intent.
+#
+#   The webhook envelope declared a required api_version that is never sent and
+#   nested the payload under data.object, which the sender does not do. created
+#   is epoch milliseconds, not seconds.
+#
+# ---------------------------------------------------------------------------
+# 2026-09-19: THE PATHS WERE RIGHT AND THE PRODUCT WAS WRONG.
+#
+# The pass above traced every path to a handler and left the positioning alone.
+# On 2026-09-19 a sweep of the public surfaces that are not .tsx read this file
+# and found four retired names and a retired capability framing, all of them
+# live at trooth.co/openapi.yaml: the title named a product this business does
+# not sell, the poweredBy field was documented with that same retired name as
+# its const value, and three of the four tags were PROVE and GROW capability
+# labels with a retired product name after each.
+#
+# Nine of those capabilities were deleted with the /products tree on
+# 2026-09-16. This file kept three of them because no gate read it.
+# check:one-product and check:claims walk .ts and .tsx under the app roots;
+# check:public-profile read two files under infra/public-profile. A YAML
+# document in public/ was outside all three, and it is the contract a developer
+# reads first. scripts/check-public-profile.mjs now reads it, by name, with the
+# reason written next to it.
+#
+# WHAT CHANGED AND WHAT DELIBERATELY DID NOT. No path, operationId, parameter,
+# status code, required list or property name was touched: this still describes
+# exactly what the worker at api.trooth.co serves, and a reader built against
+# the previous revision still matches. What changed is the title, the summary,
+# the boundary paragraph, three tag names and the description of one field.
+#
+# THE ONE THING THIS DOCUMENT COULD NOT FIX. The worker really does send
+# poweredBy with a retired product name as its value, from five places in
+# trooth-os-worker-f, and it really does send a response header whose NAME
+# carries the same retired name. Those are the worker's to change, in another
+# repository, and changing either breaks a reader that matches on the literal.
+# So the header name is spelled below exactly as it is sent, because a contract
+# that renames a wire header is a contract that lies; and the poweredBy value
+# is described as the opaque constant it is rather than reprinted on a public
+# surface. Both are reported against the worker rather than papered over here.
+#
+# AND NO RETIRED NAME IS REPRINTED IN THIS COMMENT, WHICH IS NOT SQUEAMISHNESS.
+# A comment in a .ts file is compiled away, which is why check:one-product
+# strips comments before it reads one. This file is served BYTE FOR BYTE at
+# trooth.co/openapi.yaml, comments included, so a comment here is published
+# copy that a crawler reads. The gate that reads this file does not strip
+# comments, for the same reason, and a change record that named what it removed
+# would put the name straight back on the surface it was removed from.
+# ---------------------------------------------------------------------------
 openapi: 3.1.0
 info:
-  title: Trooth OS API
-  version: "2026-08-02"
-  summary: Compliance infrastructure for AI — witnessed, never signed.
+  title: Trooth Network API
+  version: "1.0"
+  # Pre-launch. One public contract, versioned 1.0, released on the date below.
+  x-released: "2026-08-22"
+  summary: >-
+    The public API of the Trooth Network, which is Trooth's only product and is
+    free. DNS says where a company is; Trooth says who it is.
   description: |
-    One API across the three Trooth OS pillars — PROTECT, PROVE, GROW — spanning
-    nine capabilities. Public reads need no key; authenticated writes and monitoring
-    use a Bearer token issued with your plan.
+    The public contract for api.trooth.co. Public reads need no key.
+    Authenticated reads use a Bearer token, which is either a session token or a
+    tenant API key beginning with `tk_`, created from the workspace and
+    revocable there.
 
-    Boundary, enforced in every response and never softened: Trooth automates.
-    Trooth never signs your claims for you, and never certifies compliance. Every
-    value here is *witnessed* evidence — what a scan observed, cryptographically
-    anchored — not an attestation and not a certification. Consumers confirm
-    independently; the `advisory` flag is always true.
+    This document lists only routes that exist. It is deliberately smaller than
+    the API: session-scoped workspace routes, authentication flows and
+    unauthenticated endpoints that send mail or start work are not published
+    here.
+
+    Boundary, enforced in every response and never softened: Trooth witnesses
+    and dates facts. It does not score, rate, rank or certify anyone, it never
+    signs a company's claims on its behalf, and it issues no certification.
+    Every value here is *witnessed* evidence - what a reading found,
+    from a named source, on a stated date - and not an attestation. Consumers
+    confirm independently.
+
+    Every response carries `X-Trooth-OS-Disclaimer` and `X-Trooth-Automation`
+    headers, and the public Trust Profile carries `disclaimer` and
+    `disclaimer_url` in its body. The first of those header names carries a
+    product name this business retired. It is spelled exactly as the worker
+    sends it, because a contract that renames a wire header breaks the reader
+    matching on it; the rename belongs in the worker, and is reported there
+    rather than hidden behind a description that disagrees with the wire.
   contact: { name: Trooth, url: https://trooth.co, email: hello@trooth.co }
   license: { name: Terms of Service, url: https://trooth.co/terms }
 
@@ -20,180 +169,168 @@ servers:
   - url: https://api.trooth.co
     description: Production
 
+# A tag inside a contract reads as a thing on offer, which is why the seven
+# capability tags carrying no operation were deleted in the pass above. The
+# three that still carried one kept their capability labels, and so kept three
+# retired product names on a live public surface. These name the operation,
+# which is the whole job of a tag.
 tags:
-  - name: PROTECT · GRC Automation
-    description: Continuous control monitoring against SOC 2, ISO 27001, EU AI Act, NIST AI RMF, HIPAA.
-  - name: PROTECT · AI Security Posture
-    description: Model, data, and pipeline exposure scanning for AI systems.
-  - name: PROTECT · AI Governance
-    description: AI system inventory, risk classification, and policy conformance.
-  - name: PROVE · Trust Center
-    description: The public, signed Trust Profile any buyer can read with no login.
-  - name: PROVE · Questionnaire Auto-Answer
-    description: Draft security-questionnaire answers from witnessed evidence.
-  - name: PROVE · Evidence Dossier
-    description: Export the signed evidence behind any control.
-  - name: GROW · Trooth Network
-    description: Discover and compare companies by witnessed posture.
-  - name: GROW · Professional Directory
-    description: Directory of witnessed companies and practitioners.
-  - name: GROW · Marketplace Leads
-    description: Buyer-intent leads sourced from profile views and requests.
+  - name: Public profile
+    description: The public record of one company, readable with no key.
+  - name: Questionnaire drafts
+    description: Draft answers to an inbound security questionnaire, each drawn from the company's own witnessed evidence.
+  - name: Buyer intent
+    description: Buyers who submitted interest in a company through the public marketplace.
   - name: Webhooks
     description: Signed state-change events delivered to your endpoint.
 
-x-pillars:
-  PROTECT: [GRC Automation, AI Security Posture, AI Governance]
-  PROVE: [Trust Center, Questionnaire Auto-Answer, Evidence Dossier]
-  GROW: [Trooth Network, Professional Directory, Marketplace Leads]
-
 paths:
-  # ---------------- PROVE · Trust Center (public) ----------------
+  # ---------------- Public profile (no key) ----------------
   /public/trust/{slug}:
     get:
-      tags: [PROVE · Trust Center]
+      tags: [Public profile]
       operationId: getPublicTrustProfile
       summary: Get a company's public Trust Profile
-      description: Signed, public posture for any company by slug — tier, Trust Score, framework coverage, last witnessed time. No key. `acme-ai` is a live sample.
+      description: |
+        The public projection of one company's witnessed posture: pillar counts,
+        audit-chain evidence and an AI profile. No key.
+
+        The slug is matched exactly against the company id and the company
+        domain, and then against the slug the workspace hands out, so
+        `co-example-com`, `example.com` and a workspace slug all resolve. There
+        is no sample slug; an identifier the Network does not hold is simply
+        unknown.
+
+        This is the canonical schema for this route. No rate limit is applied
+        to it.
+
+        A company that has published a canonical profile on the Trooth Network
+        has exactly one profile there, and this route answers 404 with that
+        canonical URL rather than serving a second representation.
+
+        No figure is published for a company. None appears on the public page,
+        so none appears here either; `trustScore` carries the date of the most
+        recent reading and nothing else.
       security: []
       parameters: [{ $ref: '#/components/parameters/slug' }]
       responses:
-        "200": { description: Signed Trust Profile., content: { application/json: { schema: { $ref: '#/components/schemas/TrustProfile' } } } }
-        "202": { $ref: '#/components/responses/NotYetWitnessed' }
-        "404": { $ref: '#/components/responses/NotFound' }
-        "429": { $ref: '#/components/responses/RateLimited' }
+        "200":
+          description: The published Trust Profile.
+          content: { application/json: { schema: { $ref: '#/components/schemas/PublicTrustProfile' } } }
+        "404":
+          description: |
+            No published profile at this identifier. Three distinct answers share
+            this status: the company is unclaimed, the owner has claimed it and
+            chosen not to publish, or the profile has moved to a canonical page
+            on the Trooth Network. Privacy is a valid choice and is not a
+            negative signal.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: '#/components/schemas/UnpublishedProfile' }
+                  - { $ref: '#/components/schemas/MovedToCanonical' }
         "500": { $ref: '#/components/responses/ServerError' }
 
-  # ---------------- PROTECT · GRC Automation ----------------
-  /v1/grc/scan:
-    post:
-      tags: [PROTECT · GRC Automation]
-      operationId: createGrcScan
-      summary: Run an advisory GRC control scan
-      description: Evaluate a plan/target against a framework's controls. Report-only; never applies changes, never signs. Scaffold mode until 2026-08-02 (returns `pending`).
-      security: [{ bearerAuth: [] }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ScanRequest' } } } }
-      responses:
-        "200": { description: Scan result., content: { application/json: { schema: { $ref: '#/components/schemas/ScanResult' } } } }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "429": { $ref: '#/components/responses/RateLimited' }
-        "500": { $ref: '#/components/responses/ServerError' }
-  /v1/grc/controls:
-    get:
-      tags: [PROTECT · GRC Automation]
-      operationId: listGrcControls
-      summary: List controls and witnessed status
-      security: [{ bearerAuth: [] }]
-      parameters: [{ name: framework, in: query, schema: { type: string, enum: [soc2, iso27001, eu_ai_act, nist_ai_rmf, hipaa] } }]
-      responses:
-        "200": { description: Controls with witnessed status., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Control' } } } } }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-
-  # ---------------- PROTECT · AI Security Posture ----------------
-  /v1/ai-security/scan:
-    post:
-      tags: [PROTECT · AI Security Posture]
-      operationId: createAiSecurityScan
-      summary: Scan an AI system's security posture
-      description: Advisory exposure scan across model, data, and pipeline surfaces. Report-only.
-      security: [{ bearerAuth: [] }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AiSystemRef' } } } }
-      responses:
-        "200": { description: Findings., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Finding' } } } } }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "429": { $ref: '#/components/responses/RateLimited' }
-
-  # ---------------- PROTECT · AI Governance ----------------
-  /v1/ai-governance/inventory:
-    get:
-      tags: [PROTECT · AI Governance]
-      operationId: getAiInventory
-      summary: AI system inventory with risk classification
-      security: [{ bearerAuth: [] }]
-      responses:
-        "200": { description: Inventory., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/AiSystem' } } } } }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-
-  # ---------------- PROVE · Questionnaire Auto-Answer ----------------
+  # ---------------- Questionnaire drafts ----------------
   /v1/questionnaire/answer:
     post:
-      tags: [PROVE · Questionnaire Auto-Answer]
+      tags: [Questionnaire drafts]
       operationId: answerQuestionnaire
       summary: Draft answers from witnessed evidence
-      description: Returns draft answers grounded in witnessed evidence, each with a citation. Drafts only — you review and send; Trooth never submits or signs on your behalf.
-      security: [{ bearerAuth: [] }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/QuestionnaireRequest' } } } }
-      responses:
-        "200": { description: Draft answers with evidence citations., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/DraftAnswer' } } } } }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "202": { $ref: '#/components/responses/NotYetWitnessed' }
+      description: |
+        Answers inbound security-questionnaire questions from your own witnessed
+        evidence and from knowledge-base entries you have already approved.
+        Anything not drawn from one of those is returned with status
+        `needs_review` and routed to a human, never fabricated.
 
-  # ---------------- PROVE · Evidence Dossier ----------------
-  /v1/evidence/{control}:
-    get:
-      tags: [PROVE · Evidence Dossier]
-      operationId: getEvidence
-      summary: Signed evidence behind a control
+        Drafts only. You review and send; Trooth never submits or signs on your
+        behalf.
       security: [{ bearerAuth: [] }]
-      parameters: [{ name: control, in: path, required: true, schema: { type: string, example: soc2.cc6.1 } }]
-      responses:
-        "200": { description: Evidence dossier., content: { application/json: { schema: { $ref: '#/components/schemas/EvidenceDossier' } } } }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "404": { $ref: '#/components/responses/NotFound' }
-        "202": { $ref: '#/components/responses/NotYetWitnessed' }
-
-  # ---------------- GROW · Trooth Network (public) ----------------
-  /public/network/search:
-    get:
-      tags: [GROW · Trooth Network]
-      operationId: searchNetwork
-      summary: Search companies by witnessed posture
-      security: []
       parameters:
-        - { name: q, in: query, schema: { type: string } }
-        - { name: framework, in: query, schema: { type: string } }
-        - { name: min_score, in: query, schema: { type: integer, minimum: 0, maximum: 100 } }
+        - name: phrase
+          in: query
+          description: >-
+            Set to 1, true or yes to reword answers that already carry a source into
+            cleaner prose. Items routed for review are never sent to the model,
+            and the grounding source stays attached, so this is presentation on
+            top of fact and never a new claim. Ignored when no model binding is
+            available.
+          schema: { type: string, enum: ["1", "true", "yes"] }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/QuestionnaireRequest' } } }
       responses:
-        "200": { description: Matching public profiles., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/TrustProfile' } } } } }
-        "429": { $ref: '#/components/responses/RateLimited' }
+        "200":
+          description: Draft answers with the source each one is drawn from.
+          content: { application/json: { schema: { $ref: '#/components/schemas/QuestionnaireAnswers' } } }
+        "400":
+          description: The body carried no usable questions array.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: questions_required } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "500": { $ref: '#/components/responses/ServerError' }
 
-  # ---------------- GROW · Professional Directory (public) ----------------
-  /public/directory:
-    get:
-      tags: [GROW · Professional Directory]
-      operationId: listDirectory
-      summary: Directory of witnessed companies
-      security: []
-      parameters: [{ name: category, in: query, schema: { type: string } }, { name: cursor, in: query, schema: { type: string } }]
-      responses:
-        "200": { description: Directory page., content: { application/json: { schema: { $ref: '#/components/schemas/DirectoryPage' } } } }
-
-  # ---------------- GROW · Marketplace Leads ----------------
+  # ---------------- Buyer intent ----------------
   /v1/marketplace/leads:
     get:
-      tags: [GROW · Marketplace Leads]
+      tags: [Buyer intent]
       operationId: listLeads
-      summary: Buyer-intent leads from profile activity
-      description: Leads sourced from `profile.viewed` and `profile.requested` signals on your Trust Profile. Buyer demand, surfaced — you decide what to do with it.
+      summary: Buyer-intent leads from the public marketplace
+      description: >-
+        Buyers who submitted interest in your company through POST
+        /public/marketplace/intent, newest first, capped at 300. Buyer demand,
+        surfaced. You decide what to do with it.
       security: [{ bearerAuth: [] }]
       responses:
-        "200": { description: Leads., content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Lead' } } } } }
+        "200":
+          description: The leads this company has received.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LeadPage' } } }
         "401": { $ref: '#/components/responses/Unauthorized' }
+        "500": { $ref: '#/components/responses/ServerError' }
 
 webhooks:
   troothEvent:
     post:
       tags: [Webhooks]
       operationId: onTroothEvent
-      summary: Trooth → your endpoint (signed)
+      summary: Trooth to your endpoint (signed)
       description: |
-        Trooth POSTs a JSON event on state changes. Every delivery is signed:
-        `X-Trooth-Signature` is an HMAC-SHA256 (hex) of the raw request body, keyed
-        with your endpoint signing secret. Recompute and compare in constant time
-        before trusting a payload.
-      parameters: [{ name: X-Trooth-Signature, in: header, required: true, schema: { type: string } }]
+        Trooth POSTs a JSON event to endpoints you register from the workspace.
+        This is one of Trooth's two webhook channels: these endpoints are
+        delivered by the worker at `api.trooth.co`. Every delivery on this
+        channel carries two headers. `x-trooth-signature` is the HMAC-SHA256 of
+        the raw request body, keyed with your endpoint's signing secret, as 64
+        lowercase hex characters with no prefix. `x-trooth-event` repeats the
+        event type. This channel sends no timestamp header, and the signed bytes
+        are the body and nothing else.
+
+        Compute the same HMAC over the exact bytes you received, before any
+        JSON parsing, and compare in constant time. Deduplicate on the event
+        `id`: no timestamp is signed on this channel, so that is what makes a
+        replayed delivery harmless. Trooth makes one attempt per event and
+        records the status in the delivery log; it does not retry on its own.
+
+        The endpoint must be a public HTTPS URL. Loopback, link-local, private
+        and cloud-metadata addresses are refused at registration and at delivery.
+
+        The other channel is the alert destinations a workspace configures under
+        Alerts. Those are delivered by the Trooth application rather than the
+        worker, and they share this header name while signing different bytes:
+        `x-trooth-timestamp` carries the Unix second the delivery was signed at,
+        `x-trooth-signature` is `sha256=` followed by the HMAC-SHA256 of that
+        timestamp, a full stop and the body, and the key is derived for each
+        destination rather than issued per endpoint. That header carries two
+        comma-separated values for the seven days after a destination's key is
+        rotated - the new key first and the one it replaced second - so a
+        receiver on that channel splits the header on commas, trims each value,
+        and accepts the delivery if any value matches. Its
+        recipe is at /docs#webhooks. This operation does not describe that
+        channel, and a receiver built from it rejects every delivery from it.
+      parameters:
+        - { name: x-trooth-signature, in: header, required: true, description: "HMAC-SHA256 of the raw request body, keyed with the endpoint secret; 64 lowercase hex characters, no prefix.", schema: { type: string, pattern: "^[0-9a-f]{64}$" } }
+        - { name: x-trooth-event, in: header, required: true, description: "The event type, repeated from the body.", schema: { type: string } }
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/WebhookEvent' } } } }
-      responses: { "2XX": { description: Acknowledge within 5s or delivery retries. } }
+      responses: { "2XX": { description: Acknowledge once the event is stored. A non-2xx is recorded in the delivery log and the event is not re-sent automatically. } }
 
 components:
   parameters:
@@ -201,146 +338,255 @@ components:
       name: slug
       in: path
       required: true
-      description: Company slug, e.g. `acme-ai`.
-      schema: { type: string, pattern: "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$" }
+      description: A company id or a company domain, for example `example.com`.
+      schema: { type: string, pattern: "^[a-z0-9](?:[a-z0-9.-]{0,98}[a-z0-9])?$" }
 
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      description: "API key issued with your plan. Header: `Authorization: Bearer <key>`."
+      description: >-
+        A session token, or a tenant API key beginning with `tk_` created from
+        the workspace. Keys are stored as a hash only, are shown once, and
+        revoke immediately. Header: `Authorization: Bearer <token>`.
 
   responses:
-    NotYetWitnessed:
-      description: Pending claim — the slug exists but has no witnessed evidence yet. Degrades to a pending state, never a false pass.
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: not_yet_witnessed, message: "Claimed but not yet witnessed.", state: pending } } }
-    NotFound:
-      description: No resource for this identifier.
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: not_found, message: "No profile for slug 'unknown-co'." } } }
-    RateLimited:
-      description: Plan rate limit exceeded.
-      headers: { Retry-After: { schema: { type: integer } }, X-RateLimit-Remaining: { schema: { type: integer } } }
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: rate_limited, message: "Rate limit exceeded for your plan.", retry_after: 30 } } }
     ServerError:
-      description: Unexpected server error (5xx). Safe to retry with backoff.
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: server_error, message: "Something went wrong on our end." } } }
+      description: Unexpected server error. Safe to retry with backoff.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: internal_error, message: "Something went wrong." } } }
     Unauthorized:
-      description: Missing or invalid Bearer token.
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: unauthorized, message: "Provide a valid API key." } } }
+      description: Missing, expired or invalid Bearer token.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: unauthorized, message: "Authentication required." } } }
 
   schemas:
-    TrustProfile:
+    PublicTrustProfile:
       type: object
-      required: [profile, tier, trust_score, state, advisory]
+      required: [profile, pillarSummary, chainEvidence, poweredBy, disclaimer]
       properties:
-        profile: { type: string }
-        name: { type: string }
-        tier: { type: string, enum: [bronze, silver, gold, enterprise] }
-        trust_score: { type: integer, minimum: 0, maximum: 100 }
-        state: { type: string, enum: [witnessed, pending] }
-        frameworks: { type: array, items: { $ref: '#/components/schemas/FrameworkCoverage' } }
-        last_witnessed: { type: [string, "null"], format: date-time }
-        signature: { type: string, description: Detached signature; verify with @trooth/verifier. }
-        advisory: { type: boolean, const: true }
-    FrameworkCoverage:
+        profile:
+          type: object
+          properties:
+            displayName: { type: string }
+            domain: { type: [string, "null"] }
+            jurisdiction: { type: string, example: US }
+        trustScore:
+          type: [object, "null"]
+          description: >-
+            The most recent reading, or null when none has been recorded.
+            Carries the date only. Trooth publishes no figure for a company, and
+            the container name is kept for readers already built against it.
+          properties:
+            computedAt: { type: integer, description: Epoch milliseconds. }
+        pillarSummary:
+          type: object
+          description: Counts across the 25 pillars.
+          properties:
+            total: { type: integer, const: 25 }
+            green: { type: integer }
+            amber: { type: integer }
+            red: { type: integer }
+        chainEvidence:
+          type: object
+          properties:
+            auditBlockCount: { type: integer }
+            chainIntegrity: { type: string, enum: [intact, broken, empty] }
+            integrityCheck: { type: string, example: hash-linkage }
+        aiProfile: { $ref: '#/components/schemas/AiProfile' }
+        poweredBy:
+          type: string
+          description: >-
+            A fixed branding constant. It is always present and always the same
+            string; it says nothing about the company, the profile or the
+            request, and nothing should parse it or branch on it. Its value is
+            a product name this business retired, so it is not reprinted on a
+            public surface - the worker that still sends it is where that gets
+            fixed, and the const is dropped here rather than republished.
+        disclaimer: { type: string }
+        disclaimer_url: { type: string, format: uri }
+    AiProfile:
       type: object
+      description: The AI posture block on the public card, assembled from the company's own AI inventory, screening history and governance controls.
       properties:
-        id: { type: string, enum: [soc2, iso27001, eu_ai_act, nist_ai_rmf, hipaa] }
-        coverage: { type: number, minimum: 0, maximum: 1 }
-    Control:
+        systemsTotal: { type: integer }
+        byRiskTier:
+          type: object
+          description: Counts keyed by EU AI Act risk classification, plus `unclassified`.
+          additionalProperties: { type: integer }
+        byKind:
+          type: object
+          description: Counts keyed by system kind, for example model, agent, application, dataset.
+          additionalProperties: { type: integer }
+        agents: { type: integer }
+        guard:
+          type: object
+          properties:
+            active: { type: boolean }
+            lastScreenedAt: { type: [integer, "null"], description: Epoch milliseconds. }
+            lastRisk: { type: [string, "null"] }
+        governance:
+          type: object
+          properties:
+            frameworks:
+              type: array
+              items:
+                type: object
+                properties:
+                  name: { type: string, example: ISO 42001 }
+                  satisfied: { type: integer }
+                  total: { type: integer }
+            assessments: { type: integer }
+        highlights: { type: array, items: { type: string } }
+        hasAi: { type: boolean }
+    UnpublishedProfile:
       type: object
+      description: Returned with status 404 when the Network holds no readable profile at this identifier.
+      required: [slug, status, measured, provenance, message]
       properties:
-        id: { type: string, example: soc2.cc6.1 }
-        framework: { type: string }
-        witnessed: { type: boolean }
-        last_witnessed: { type: [string, "null"], format: date-time }
-    ScanRequest:
+        slug: { type: string }
+        status: { type: string, enum: [unclaimed, private] }
+        measured: { type: boolean, description: False when unclaimed, true when claimed but withheld. }
+        provenance: { type: string, enum: [honest_absence, withheld_by_owner] }
+        message: { type: string }
+        claim:
+          type: object
+          properties:
+            action: { type: string }
+            claim_url: { type: string, format: uri }
+            who_can_claim: { type: string }
+            what_changes: { type: string }
+        also_available:
+          type: object
+          description: Present only on an unclaimed record.
+          properties:
+            outside_in: { type: string }
+    MovedToCanonical:
       type: object
+      description: Returned with status 404 when the company has one canonical profile on the Trooth Network.
+      required: [error, message, canonicalUrl]
       properties:
-        plan: { type: object, description: Plan/target to evaluate (e.g. a Terraform plan JSON). }
-        framework: { type: string, enum: [soc2, iso27001, eu_ai_act, nist_ai_rmf, hipaa] }
-        fail_on: { type: string, enum: [none, low, medium, high, critical], default: none }
-    ScanResult:
-      type: object
-      properties:
-        id: { type: string, example: scan_01J8Z9K2QH4B7C }
-        state: { type: string, enum: [witnessed, pending] }
-        trust_score: { type: integer }
-        findings: { type: array, items: { $ref: '#/components/schemas/Finding' } }
-        advisory: { type: boolean, const: true }
-    Finding:
-      type: object
-      properties:
-        control: { type: string, example: soc2.cc6.1 }
-        severity: { type: string, enum: [low, medium, high, critical] }
-        witnessed: { type: boolean }
-        detail: { type: string }
-    AiSystemRef:
-      type: object
-      properties: { system_id: { type: string }, surfaces: { type: array, items: { type: string, enum: [model, data, pipeline] } } }
-    AiSystem:
-      type: object
-      properties:
-        id: { type: string }
-        name: { type: string }
-        risk_class: { type: string, enum: [minimal, limited, high, unacceptable], description: EU AI Act risk classification. }
-        owner: { type: string }
+        error: { type: string, const: moved }
+        message: { type: string }
+        canonicalUrl: { type: string, format: uri }
     QuestionnaireRequest:
       type: object
-      properties: { questions: { type: array, items: { type: string } }, profile: { type: string } }
+      required: [questions]
+      properties:
+        questions:
+          type: array
+          description: At most 200 questions are read. Each is truncated to 600 characters.
+          maxItems: 200
+          items: { type: string, maxLength: 600 }
+    QuestionnaireAnswers:
+      type: object
+      properties:
+        count: { type: integer }
+        auto_answered: { type: integer }
+        needs_review: { type: integer }
+        answers: { type: array, items: { $ref: '#/components/schemas/DraftAnswer' } }
+        phrased: { type: boolean, description: Whether AI phrasing actually ran. }
+        note: { type: string }
     DraftAnswer:
       type: object
+      required: [question, answer, status, confidence, source]
       properties:
         question: { type: string }
         answer: { type: string }
-        evidence: { type: array, items: { type: string, example: soc2.cc6.1 } }
-        review_required: { type: boolean, const: true, description: You review and send. Trooth never submits. }
-    EvidenceDossier:
+        status:
+          type: string
+          enum: [answered, needs_review]
+          description: You review and send either way. Trooth never submits.
+        confidence: { type: string, enum: [high, medium, low, none] }
+        source:
+          type: string
+          enum: [knowledge_base, witnessed_evidence, crosswalk, routed]
+          description: What the answer is drawn from. `routed` means nothing was found and a human must respond.
+        control: { type: string, description: The control area or framework the question was matched to, when one was matched. }
+        groundedAnswer: { type: string, description: Present only when AI phrasing rewrote the answer. Carries the original grounded wording. }
+        phrased: { type: boolean, description: Present only when AI phrasing rewrote the answer. }
+    LeadPage:
       type: object
       properties:
-        control: { type: string }
-        witnessed_at: { type: [string, "null"], format: date-time }
-        artifacts: { type: array, items: { type: object, properties: { kind: { type: string }, hash: { type: string }, source: { type: string } } } }
-        signature: { type: string }
-    DirectoryPage:
-      type: object
-      properties: { items: { type: array, items: { $ref: '#/components/schemas/TrustProfile' } }, next_cursor: { type: [string, "null"] } }
+        leads: { type: array, items: { $ref: '#/components/schemas/Lead' } }
+        count: { type: integer }
     Lead:
       type: object
       properties:
-        id: { type: string }
-        signal: { type: string, enum: [profile.viewed, profile.requested] }
-        buyer_hint: { type: string }
-        created: { type: integer }
+        id: { type: string, example: mi_0f8b1c3e-4a2d-4f11-9c7a-2b6d5e8f0a13 }
+        buyer_email: { type: [string, "null"] }
+        buyer_company: { type: [string, "null"] }
+        message: { type: [string, "null"] }
+        created_at: { type: integer, description: Epoch milliseconds. }
     WebhookEvent:
       type: object
-      required: [id, type, created, api_version, data]
+      required: [id, type, created, data]
       properties:
-        id: { type: string, example: evt_01J8Z9K2QH4B7C }
-        type: { type: string, enum: [trust.score.changed, control.witnessed, profile.viewed, profile.requested], description: "`control.verified` accepted as a legacy alias for `control.witnessed`." }
-        created: { type: integer }
-        api_version: { type: string, example: "2026-08-02" }
-        data: { type: object, properties: { object: { oneOf: [ { $ref: '#/components/schemas/ScoreChanged' }, { $ref: '#/components/schemas/ControlWitnessed' }, { $ref: '#/components/schemas/ProfileViewed' } ] } } }
+        id: { type: string, example: evt_9f2c4a1b7e03 }
+        type: { type: string, enum: [witness.changed, control.witnessed, profile.viewed, profile.requested, monitoring.drift], description: "`control.verified` and `trust.score.changed` are accepted as legacy names when you register an endpoint and are delivered as `control.witnessed` and `witness.changed`. `profile.requested` is accepted at registration and is not sent today. Deliveries to a subscription made with POST /public/trust/{slug}/agent-subscribe are a separate system: their type is `trust.posture.changed` and their envelope is not this one." }
+        created: { type: integer, description: Epoch milliseconds. }
+        data:
+          description: Event-specific payload. The shape depends on the type, and the sender does not wrap it.
+          oneOf:
+            - { $ref: '#/components/schemas/WitnessChanged' }
+            - { $ref: '#/components/schemas/ControlWitnessed' }
+            - { $ref: '#/components/schemas/ProfileViewed' }
+            - { $ref: '#/components/schemas/MonitoringDrift' }
       example:
-        id: evt_01J8Z9K2QH4B7C
-        type: trust.score.changed
-        created: 1785340800
-        api_version: "2026-08-02"
-        data: { object: { profile: acme-ai, previous_score: 78, current_score: 84, tier: silver, changed_controls: [soc2.cc6.1] } }
-    ScoreChanged:
+        id: evt_9f2c4a1b7e03
+        type: profile.viewed
+        created: 1785340800000
+        data: { slug: example.com, referrer: "https://trooth.co/network", at: 1785340800000 }
+    WitnessChanged:
       type: object
-      properties: { profile: { type: string }, previous_score: { type: integer }, current_score: { type: integer }, tier: { type: string }, changed_controls: { type: array, items: { type: string } } }
+      description: >-
+        Payload for witness.changed. Witnessed coverage moved: `passed` counts the checks that read as
+        expected and `run` the checks run, with the previous pair and the difference.
+        Counts only; Trooth publishes no figure.
+      properties:
+        coverage:
+          type: object
+          properties: { passed: { type: integer }, run: { type: integer } }
+        previous:
+          type: [object, "null"]
+          properties: { passed: { type: integer }, run: { type: integer } }
+        change:
+          type: object
+          properties: { passed: { type: [integer, "null"] }, run: { type: [integer, "null"] } }
+        source: { type: string, example: capability }
+        changed_at: { type: integer, description: Epoch milliseconds. }
     ControlWitnessed:
       type: object
-      properties: { profile: { type: string }, control: { type: string }, witnessed_at: { type: string, format: date-time }, source: { type: string } }
+      description: Payload for control.witnessed.
+      properties:
+        controlId: { type: string }
+        status: { type: string, example: passed }
     ProfileViewed:
       type: object
-      properties: { profile: { type: string }, viewer_type: { type: string, enum: [buyer, anonymous] }, viewed_at: { type: string, format: date-time } }
+      description: Payload for profile.viewed.
+      properties:
+        slug: { type: string }
+        referrer: { type: string }
+        at: { type: integer, description: Epoch milliseconds. }
+    MonitoringDrift:
+      type: object
+      description: Payload for monitoring.drift. One event per workspace per re-witness run.
+      properties:
+        count: { type: integer }
+        changes:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              provider_key: { type: string }
+              summary: { type: string }
+              direction: { type: string, example: connection_lost }
+              prev_status: { type: string }
+              new_status: { type: string }
+        url: { type: string, format: uri }
     Error:
       type: object
-      required: [error, message]
+      required: [error]
       properties:
-        error: { type: string, enum: [not_found, not_yet_witnessed, rate_limited, server_error, unauthorized] }
+        error: { type: string, enum: [unauthorized, questions_required, moved, internal_error, bad_json, bad_request] }
         message: { type: string }
-        state: { type: string }
-        retry_after: { type: integer }
