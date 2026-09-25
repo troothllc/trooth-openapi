@@ -6,7 +6,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Validate OpenAPI 3.1
         run: |
           python3 -m pip install --quiet openapi-spec-validator pyyaml
