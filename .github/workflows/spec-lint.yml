@@ -1,18 +1,43 @@
 name: spec-lint
 on:
   push: { paths: ["spec/**", ".github/workflows/spec-lint.yml"] }
-  pull_request: { paths: ["spec/**"] }
+  pull_request: { paths: ["spec/**", ".github/workflows/spec-lint.yml"] }
+  schedule: [{ cron: "17 6 * * 1" }]
+  workflow_dispatch:
+permissions: { contents: read }
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Validate OpenAPI 3.1
+      - name: Validate the two OpenAPI 3.1 documents
         run: |
           python3 -m pip install --quiet openapi-spec-validator pyyaml
           python3 - <<'PY'
-          import yaml
+          import json, yaml
           from openapi_spec_validator import validate
           validate(yaml.safe_load(open("spec/openapi.yaml")))
-          print("OpenAPI 3.1 valid")
+          print("spec/openapi.yaml: valid OpenAPI 3.1")
+          # spec/openapi.json embeds a JSON Schema that carries its own $id, and
+          # resolves its #/$defs references against that $id as JSON Schema
+          # 2020-12 requires. openapi-spec-validator resolves them against the
+          # document root instead, so this file is checked for shape here.
+          d = json.load(open("spec/openapi.json"))
+          assert d["openapi"].startswith("3.1."), d["openapi"]
+          assert d["paths"], "no paths"
+          print("spec/openapi.json: OpenAPI", d["openapi"], "with", len(d["paths"]), "paths")
           PY
+  drift:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Compare each copy with the contract trooth.co serves
+        run: |
+          fail=0
+          for f in openapi.json openapi.yaml; do
+            curl -fsS "https://trooth.co/$f" -o "$RUNNER_TEMP/$f"
+            if cmp -s "$RUNNER_TEMP/$f" "spec/$f"; then echo "spec/$f matches https://trooth.co/$f"
+            else echo "::error file=spec/$f::spec/$f differs from https://trooth.co/$f"; fail=1; fi
+          done
+          exit $fail

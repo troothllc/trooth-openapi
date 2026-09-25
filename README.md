@@ -1,18 +1,18 @@
-# trooth-platform
+# trooth-openapi
 
-The OpenAPI 3.1 description of the public Trooth API.
+The OpenAPI 3.1 contracts for Trooth's two public hosts, trooth.co and api.trooth.co.
 
 Trooth operates the Trooth Network: one public, signed, machine-readable record per company, carrying its identity, products and demos, commercial terms, domain and marketing links, people, documents, security and privacy posture, AI practices, procurement terms and relationships. It is Trooth's only product and it is free.
 
 DNS says where a company is. A TLS certificate says the connection is authentic. The Trooth Network says who the company is and what it does with your data.
 
-**Trooth witnesses and dates facts. It does not score, rate, rank or certify anyone.**
+**Trooth witnesses and dates facts. It does not grade, rate or rank anyone.**
 
 ## Where the statements in this file come from
 
 Every statement below about the API was read out of the published OpenAPI document served at [trooth.co/openapi.json](https://trooth.co/openapi.json) on 2026-09-19, and checked again on 2026-09-25 against the website's source copy of that document. Where this file says "the document", it means the published contract, not a file at a path here.
 
-**The files in this repository are not that contract.** `spec/openapi.yaml` here is a copy of the contract for the other host, `api.trooth.co`, as served at [trooth.co/openapi.yaml](https://trooth.co/openapi.yaml). `examples/` holds signature checks for webhooks sent from `api.trooth.co`, not examples of the operations below. Where a file here disagrees with a served contract, the served contract is right.
+**What is in this repository.** `spec/openapi.json` is a copy of this contract as served at [trooth.co/openapi.json](https://trooth.co/openapi.json). `spec/openapi.yaml` is a copy of the contract for the other host, `api.trooth.co`, as served at [trooth.co/openapi.yaml](https://trooth.co/openapi.yaml). Both copies are refreshed from the served files each time Trooth publishes this repository, and the `drift` job in `.github/workflows/spec-lint.yml` runs every Monday and fails when either copy differs from what trooth.co serves. `examples/` holds signature checks for webhooks sent from `api.trooth.co`, not examples of the operations below. Where a file here disagrees with a served contract, the served contract is right.
 
 If a reader needs the contract itself rather than a description of it, fetch it:
 

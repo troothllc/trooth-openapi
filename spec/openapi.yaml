@@ -1,133 +1,14 @@
-# ---------------------------------------------------------------------------
-# WHAT THIS DOCUMENT PROMISED THAT DID NOT EXIST, AND WHAT WAS DONE ABOUT IT.
+# Trooth Network API: the public contract for api.trooth.co.
 #
-# Reviewed against the worker source on 2026-09-03. Every path was traced to the
-# handler that serves it in trooth-os-worker-f, the only worker holding the
-# api.trooth.co routes /public/* and /v1/*. Seven of the ten paths this file
-# published had no handler anywhere. A developer who copied one of them got a
-# 404 as their first impression of the API.
+# Served at https://trooth.co/openapi.yaml. The contract for the trooth.co host
+# is a separate document, https://trooth.co/openapi.json. Every path below has a
+# handler at api.trooth.co, and every schema describes the body that host sends.
 #
-# REMOVED, BECAUSE NOTHING SERVES THEM.
-#
-#   POST /v1/grc/scan
-#     There is no /v1/grc mount. The path was never served by any worker, it
-#     demanded a bearer token nothing reads, and its documented body was a shape
-#     nothing accepts.
-#
-#   GET /v1/grc/controls
-#     Same missing mount. The nearest real route, GET /v1/ai-gov/controls, holds
-#     AI governance controls, not SOC 2 or ISO 27001 framework controls, so it
-#     is not this operation under another name.
-#
-#   POST /v1/ai-security/scan
-#     There is no /v1/ai-security mount. The nearest real route, POST
-#     /v1/ai-spm/scan, screens a block of text for secrets, personal data and
-#     prompt injection and takes {text, mode}. That is a different operation,
-#     not this one renamed.
-#
-#   GET /v1/ai-governance/inventory
-#     There is no /v1/ai-governance mount, and the AI governance router that
-#     does exist has no inventory route.
-#
-#   GET /v1/evidence/{control}
-#     The /v1/evidence router serves a list, an attest, an upload, a webhook
-#     ingest, a file fetch and a delete. It has no handler keyed by a control
-#     identifier. This one is worth reading twice: probing it live answers 401,
-#     not 404, because the router's auth guard runs before route matching. A
-#     caller holding a valid key gets the 404. The live status code was
-#     misleading and the source settled it.
-#
-#   GET /public/network/search
-#     No handler. A similar public search does exist at GET
-#     /public/marketplace/search, but it reads q and limit rather than framework
-#     and a threshold, and it returns a slug, a name and a category rather
-#     than profiles. Publishing it here would have meant writing a new contract
-#     rather than correcting a name, so it is left out until someone designs it
-#     deliberately.
-#
-#   GET /public/directory
-#     No handler. GET /public/pros is a directory of individual professionals,
-#     not of companies, so it is not this operation renamed.
-#
-# Removed with them, having nothing left to describe: ScanRequest, ScanResult,
-# Control, Finding, AiSystemRef, AiSystem, EvidenceDossier, DirectoryPage and
-# FrameworkCoverage. The seven capability tags that no longer carry an operation
-# and the x-pillars block went with them: they described a product surface, and
-# inside a contract they read as endpoints on offer.
-#
-# THE THREE PATHS THAT SURVIVED WERE ALSO WRONG IN THEIR BODIES, which is the
-# same defect as a path that does not exist. Every schema below was rewritten
-# from the handler that produces it and confirmed against the live host wherever
-# the route is public.
-#
-#   TrustProfile claimed a figure, a framework coverage array, a detached
-#   signature and an advisory flag. The response carries none of them. No
-#   figure is published for a company at all; the handler sends the date of
-#   the most recent reading and nothing else.
-#
-#   The Trust Profile description offered acme-ai as an illustrative sample. The
-#   handler has no reserved sample slug and answers 404 for it. The whole
-#   invented-company branch was deleted from the worker; the claim outlived it.
-#
-#   The 202 not-yet-witnessed and 429 rate-limited responses were documented on
-#   routes that never return them. None of the three surviving routes is rate
-#   limited, and none answers 202.
-#
-#   QuestionnaireRequest declared a profile field the validator never reads, and
-#   omitted the phrase query parameter the route does read. Its response is an
-#   object with counts, not a bare array.
-#
-#   Lead described buyer-intent signals named profile.viewed and
-#   profile.requested. The rows are the buyer contact details submitted through
-#   POST /public/marketplace/intent.
-#
-#   The webhook envelope declared a required api_version that is never sent and
-#   nested the payload under data.object, which the sender does not do. created
-#   is epoch milliseconds, not seconds.
-#
-# ---------------------------------------------------------------------------
-# 2026-09-19: THE PATHS WERE RIGHT AND THE PRODUCT WAS WRONG.
-#
-# The pass above traced every path to a handler and left the positioning alone.
-# On 2026-09-19 a sweep of the public surfaces that are not .tsx read this file
-# and found four retired names and a retired capability framing, all of them
-# live at trooth.co/openapi.yaml: the title named a product this business does
-# not sell, the poweredBy field was documented with that same retired name as
-# its const value, and three of the four tags were PROVE and GROW capability
-# labels with a retired product name after each.
-#
-# Nine of those capabilities were deleted with the /products tree on
-# 2026-09-16. This file kept three of them because no gate read it.
-# check:one-product and check:claims walk .ts and .tsx under the app roots;
-# check:public-profile read two files under infra/public-profile. A YAML
-# document in public/ was outside all three, and it is the contract a developer
-# reads first. scripts/check-public-profile.mjs now reads it, by name, with the
-# reason written next to it.
-#
-# WHAT CHANGED AND WHAT DELIBERATELY DID NOT. No path, operationId, parameter,
-# status code, required list or property name was touched: this still describes
-# exactly what the worker at api.trooth.co serves, and a reader built against
-# the previous revision still matches. What changed is the title, the summary,
-# the boundary paragraph, three tag names and the description of one field.
-#
-# THE ONE THING THIS DOCUMENT COULD NOT FIX. The worker really does send
-# poweredBy with a retired product name as its value, from five places in
-# trooth-os-worker-f, and it really does send a response header whose NAME
-# carries the same retired name. Those are the worker's to change, in another
-# repository, and changing either breaks a reader that matches on the literal.
-# So the header name is spelled below exactly as it is sent, because a contract
-# that renames a wire header is a contract that lies; and the poweredBy value
-# is described as the opaque constant it is rather than reprinted on a public
-# surface. Both are reported against the worker rather than papered over here.
-#
-# AND NO RETIRED NAME IS REPRINTED IN THIS COMMENT, WHICH IS NOT SQUEAMISHNESS.
-# A comment in a .ts file is compiled away, which is why check:one-product
-# strips comments before it reads one. This file is served BYTE FOR BYTE at
-# trooth.co/openapi.yaml, comments included, so a comment here is published
-# copy that a crawler reads. The gate that reads this file does not strip
-# comments, for the same reason, and a change record that named what it removed
-# would put the name straight back on the surface it was removed from.
-# ---------------------------------------------------------------------------
+# Two wire names are kept exactly as sent even though they carry a retired
+# product name: one response header name, and the value of the poweredBy field.
+# A contract that renamed a wire name would be wrong for every reader that
+# matches on it, so the header is spelled as sent and poweredBy is described as
+# the opaque constant it is.
 openapi: 3.1.0
 info:
   title: Trooth Network API
@@ -149,7 +30,7 @@ info:
     here.
 
     Boundary, enforced in every response and never softened: Trooth witnesses
-    and dates facts. It does not score, rate, rank or certify anyone, it never
+    and dates facts. It does not grade, rate or rank anyone, it never
     signs a company's claims on its behalf, and it issues no certification.
     Every value here is *witnessed* evidence - what a reading found,
     from a named source, on a stated date - and not an attestation. Consumers
