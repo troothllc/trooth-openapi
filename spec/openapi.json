@@ -158,6 +158,38 @@
                 "items": {
                   "$ref": "#/$defs/conflict"
                 }
+              },
+              "signing": {
+                "$ref": "#/$defs/signing"
+              },
+              "requestedContract": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "description": "The contract the caller asked for with ?contract= or the Trooth-Contract header, or null when it asked for none. contractVersion is the contract that served the response. Additive in contract 2 (2026-09-26)."
+              },
+              "evidenceClasses": {
+                "type": "object",
+                "description": "What each evidenceClass value means. Additive in contract 2 (2026-09-26)."
+              },
+              "authority": {
+                "type": "object",
+                "description": "Domain control, registry match, representative authority and publication permission, each stated separately. Additive in contract 2 (2026-09-26).",
+                "required": [
+                  "domainControl",
+                  "registryMatch",
+                  "representativeAuthority",
+                  "publicationPermission"
+                ]
+              },
+              "relationships": {
+                "type": "object",
+                "description": "What a listed relationship does and does not establish. Additive in contract 2 (2026-09-26)."
               }
             },
             "not": {
@@ -231,6 +263,27 @@
                           "checksRun": {
                             "type": "integer",
                             "minimum": 1
+                          },
+                          "source": {
+                            "enum": [
+                              "witness_statement",
+                              "result_tally"
+                            ],
+                            "description": "What checksRun and checksPassed count. witness_statement: computed from the signed witness statement's entries; checksRun is checks read in this reading. result_tally: the reading's own tally for a reading with no statement; not a count of checks read. Additive in contract 2 (2026-09-26); absent on responses served before it."
+                          },
+                          "definition": {
+                            "type": "string",
+                            "description": "The same meaning, as a sentence."
+                          },
+                          "checksNotRead": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Entries in the reading that were not read in it. Present when source is witness_statement."
+                          },
+                          "checksInReading": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "checksRun plus checksNotRead. Present when source is witness_statement."
                           }
                         }
                       }
@@ -420,6 +473,97 @@
               "contested": {
                 "type": "boolean",
                 "description": "True when another source gave a different account; the accounts are in conflicts under the same key, and value is one of them, not the winner."
+              },
+              "claim": {
+                "type": "object",
+                "description": "Typed provenance for this claim, additive in contract 2 (2026-09-26). Fields Trooth does not hold are null and named in unknown; a claim never inherits the reading's time or signature.",
+                "required": [
+                  "claimId",
+                  "subject",
+                  "evidenceClass",
+                  "signed",
+                  "issuerAuthenticated",
+                  "unknown"
+                ],
+                "properties": {
+                  "claimId": {
+                    "type": "string"
+                  },
+                  "subject": {
+                    "type": "object",
+                    "required": [
+                      "domain",
+                      "scope"
+                    ],
+                    "properties": {
+                      "domain": {
+                        "type": "string"
+                      },
+                      "scope": {
+                        "const": "company"
+                      }
+                    }
+                  },
+                  "evidenceClass": {
+                    "enum": [
+                      "company_declaration",
+                      "trooth_observation",
+                      "public_record"
+                    ]
+                  },
+                  "declaredAt": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "observedAt": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "validUntil": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "evidenceRef": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "signed": {
+                    "const": false
+                  },
+                  "issuerAuthenticated": {
+                    "const": false
+                  },
+                  "unknown": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           },
@@ -461,6 +605,411 @@
                 }
               }
             }
+          },
+          "signing": {
+            "type": "object",
+            "description": "What in this response is signed. Additive in contract 2 (2026-09-26). profileSigned is always false: the one signed object is witnessStatement, which covers one reading and nothing else.",
+            "required": [
+              "profileSigned",
+              "signedArtifact",
+              "subject"
+            ],
+            "properties": {
+              "profileSigned": {
+                "const": false
+              },
+              "signedArtifact": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "const": "witnessStatement"
+                  }
+                ]
+              },
+              "artifactType": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "keyId": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "keyPurpose": {
+                "type": "string"
+              },
+              "observedAt": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "timeSource": {
+                "type": "string"
+              },
+              "verify": {
+                "type": "string"
+              },
+              "keys": {
+                "type": "string"
+              },
+              "keyPolicy": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "A short machine-readable reason."
+          },
+          "message": {
+            "type": "string",
+            "description": "The same reason, as a sentence."
+          }
+        }
+      },
+      "DirectorySummary": {
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "standing"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "standing": {
+            "enum": [
+              "Witnessed",
+              "Self-published"
+            ]
+          },
+          "industry": {
+            "type": "string"
+          },
+          "country_code": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "last_scan": {
+            "type": "string",
+            "description": "The date of the last witnessed reading, when there is one."
+          }
+        }
+      },
+      "DirectorySearch": {
+        "type": "object",
+        "required": [
+          "results",
+          "total",
+          "next_offset",
+          "next_cursor"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DirectorySummary"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "next_offset": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "deprecated": true
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "DirectoryFeatured": {
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DirectorySummary"
+            }
+          }
+        }
+      },
+      "DirectoryVendor": {
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "standing"
+        ],
+        "description": "A DirectorySummary with the published profile's sections. Fields beyond these are additive.",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "standing": {
+            "enum": [
+              "Witnessed",
+              "Self-published"
+            ]
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "last_scan": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicMesh": {
+        "type": "object",
+        "required": [
+          "company",
+          "frameworks",
+          "pillars",
+          "providers",
+          "controls"
+        ],
+        "properties": {
+          "sample": {
+            "type": "boolean"
+          },
+          "company": {
+            "type": "object",
+            "required": [
+              "name",
+              "handle",
+              "updatedAt"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "handle": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string",
+                "description": "The last edit to the company. Not an observation time."
+              }
+            }
+          },
+          "frameworks": {
+            "type": "array",
+            "maxItems": 0,
+            "description": "Retired 2026-09-26; always empty."
+          },
+          "pillars": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "label",
+                "status"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "restricted": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "label",
+                "status"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "lastSync": {
+                  "type": "string",
+                  "description": "When Trooth last read this connected system."
+                }
+              }
+            }
+          },
+          "controls": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "freshness30d": {
+            "type": "integer"
+          },
+          "disclaimer": {
+            "type": "string"
+          },
+          "retired": {
+            "type": "object"
+          }
+        }
+      },
+      "Comparison": {
+        "type": "object",
+        "required": [
+          "vendors"
+        ],
+        "properties": {
+          "vendors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMesh"
+            }
+          },
+          "unavailable": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "frameworkRows": {
+            "type": "array",
+            "maxItems": 0,
+            "description": "Retired 2026-09-26; always empty."
+          },
+          "retired": {
+            "type": "object"
+          }
+        }
+      },
+      "Suggestions": {
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "domain",
+                "slug",
+                "witnessed"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "domain": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "witnessed": {
+                  "type": "boolean"
+                },
+                "tagline": {
+                  "type": "string"
+                },
+                "logoUrl": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "LegalDocument": {
+        "type": "object",
+        "required": [
+          "slug",
+          "title",
+          "effective",
+          "html"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "effective": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          }
+        }
+      },
+      "Version": {
+        "type": "object",
+        "required": [
+          "stamp"
+        ],
+        "properties": {
+          "stamp": {
+            "type": "string"
           }
         }
       }
@@ -527,10 +1076,34 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "A page of results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorySearch"
+                }
+              }
+            }
           },
-          "404": {
-            "description": "No such record. Not an error; the Network does not hold it."
+          "400": {
+            "description": "A cursor that cannot be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The directory could not be read. Not a statement about any company.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -543,10 +1116,24 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Published companies.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryFeatured"
+                }
+              }
+            }
           },
-          "404": {
-            "description": "No such record. Not an error; the Network does not hold it."
+          "503": {
+            "description": "The directory could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -570,10 +1157,34 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "The company record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryVendor"
+                }
+              }
+            }
           },
           "404": {
-            "description": "No such record. Not an error; the Network does not hold it."
+            "description": "The company is not on the Trooth Network.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The record could not be read. Not a statement about the company.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -581,7 +1192,7 @@
     "/api/public-mesh/{handle}": {
       "get": {
         "summary": "A company's public evidence rollup",
-        "description": "The buyer-facing projection of a company's evidence: the witnessed state per pillar, framework rollups and provider status. Individual control rows, owners and internal notes are never returned here. Responds 404 when the company has no public record, which is a privacy-preserving answer rather than an error. Readable cross-origin (Access-Control-Allow-Origin: *); this is the read the embeddable badge performs. Cached at the edge for 300 seconds.",
+        "description": "The buyer-facing projection of a company's evidence: the witnessed state per pillar, provider status with the time each connected system was last read. Framework rollups were retired on 2026-09-26 and the frameworks array is always empty. Individual control rows, owners and internal notes are never returned here. Responds 404 when the company has no public record, which is a privacy-preserving answer rather than an error. Readable cross-origin (Access-Control-Allow-Origin: *); this is the read the embeddable badge performs. Cached at the edge for 300 seconds.",
         "parameters": [
           {
             "name": "handle",
@@ -597,10 +1208,34 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "The rollup, with framework percentages retired (empty) since 2026-09-26.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicMesh"
+                }
+              }
+            }
           },
           "404": {
-            "description": "No such record. Not an error; the Network does not hold it."
+            "description": "No public record for this handle.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The record could not be read. Not a statement about the company.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -623,7 +1258,7 @@
             "name": "contract",
             "in": "query",
             "required": false,
-            "description": "Pin the response contract version. Omit for whatever this deployment serves. A version this deployment does not answer is refused with 400 rather than approximated, because a caller that pins is pinning precisely to avoid guessing. Every response carries contractVersion, a note saying when that integer moves, and an explicit list of what the contract does NOT carry.",
+            "description": "Pin the response contract version, here or in the Trooth-Contract request header (not both with different values, which is refused with 400). Omit for the current contract. A version this deployment does not answer is refused with 400 rather than approximated. Every response names the contract that served it in the Trooth-Contract response header and in contractVersion, and the one requested in requestedContract; a request for contract 1 is served contract 2 with Deprecation and Sunset headers until 2027-03-01.",
             "schema": {
               "type": "string"
             }
@@ -643,10 +1278,24 @@
             }
           },
           "400": {
-            "description": "The q parameter is missing, or a contract version this deployment does not answer was requested."
+            "description": "The q parameter is missing, a contract version this deployment does not answer was requested, or the query and the Trooth-Contract header asked for different contracts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
-          "404": {
-            "description": "No such record. Not an error; the Network does not hold it."
+          "503": {
+            "description": "Trooth could not read its own record on this load. Retry after the Retry-After interval; nothing is asserted about the company.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -670,13 +1319,34 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Success"
-          },
-          "404": {
-            "description": "No such record. Not an error; the Network does not hold it."
+            "description": "The comparison.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comparison"
+                }
+              }
+            }
           },
           "429": {
-            "description": "Rate limited. Retry after a short pause."
+            "description": "Rate limited. Retry after a short pause.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "No company in the request could be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -700,10 +1370,14 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Success"
-          },
-          "404": {
-            "description": "No such record. Not an error; the Network does not hold it."
+            "description": "Suggestions, possibly none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Suggestions"
+                }
+              }
+            }
           }
         }
       }
@@ -727,10 +1401,24 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocument"
+                }
+              }
+            }
           },
           "404": {
-            "description": "No such record. Not an error; the Network does not hold it."
+            "description": "Unknown document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -743,10 +1431,14 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Success"
-          },
-          "404": {
-            "description": "No such record. Not an error; the Network does not hold it."
+            "description": "The build stamp.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Version"
+                }
+              }
+            }
           }
         }
       }
