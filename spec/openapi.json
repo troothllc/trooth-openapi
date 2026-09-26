@@ -141,6 +141,9 @@
               "witnessed": {
                 "$ref": "#/$defs/witnessBlock"
               },
+              "witnessStatement": {
+                "$ref": "#/$defs/witnessStatement"
+              },
               "methodology": {
                 "$ref": "#/$defs/methodology"
               },
@@ -288,6 +291,42 @@
                 }
               }
             ]
+          },
+          "witnessStatement": {
+            "type": "object",
+            "description": "Trooth's signed statement of the reading behind `witnessed`, carried exactly as the upstream witness worker signed it. Present only when that reading was signed under the witness statement; absent (the key is not in the body) for an older reading, which is not a failed check. `payload` is the signing input itself: check the Ed25519 signature over its UTF-8 bytes with the key `key_id` names at https://api.trooth.co/public/keys, decoding that key by its `encoding`, then parse `payload` to read it. The payload is a JSON object with `statement` (trooth.witness-statement.v1), `reading_id`, `domain`, `read_at`, `checks` (each with `id`, `category`, `kind` and an `outcome` of `as expected`, `not as expected` or `not read`) and `counts` (`read`, `as_expected`). It carries no verdict, no threshold and no composite figure. This is the only signed part of the body. Trooth signs what it witnessed. It never signs on a company's behalf.",
+            "required": [
+              "payload",
+              "signature",
+              "key_id",
+              "alg",
+              "canonicalization"
+            ],
+            "properties": {
+              "payload": {
+                "type": "string",
+                "minLength": 2,
+                "description": "The exact string that was signed. Do not re-serialize it before checking."
+              },
+              "signature": {
+                "type": "string",
+                "pattern": "^ed25519:[A-Za-z0-9+/]+={0,2}$",
+                "description": "The prefix `ed25519:` followed by the standard base64 of the 64 signature bytes."
+              },
+              "key_id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The `kid` of the signing key at https://api.trooth.co/public/keys."
+              },
+              "alg": {
+                "const": "Ed25519"
+              },
+              "canonicalization": {
+                "type": "string",
+                "minLength": 1,
+                "description": "How the worker serialized the payload before signing: JSON with keys in a fixed order and no whitespace, as UTF-8. `payload` is already in that form."
+              }
+            }
           },
           "methodology": {
             "type": "object",
