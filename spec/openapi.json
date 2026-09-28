@@ -280,6 +280,11 @@
                             "minimum": 0,
                             "description": "Entries in the reading that were not read in it. Present when source is witness_statement."
                           },
+                          "checksNotAsExpected": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Entries read whose outcome was not as expected: checksRun minus checksPassed, so checksRun = checksPassed + checksNotAsExpected. Present when source is witness_statement. Additive (2026-09-28)."
+                          },
                           "checksInReading": {
                             "type": "integer",
                             "minimum": 1,

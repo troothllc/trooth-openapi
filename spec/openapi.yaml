@@ -177,24 +177,31 @@ webhooks:
       summary: Trooth to your endpoint (signed)
       description: |
         Trooth POSTs a JSON event to endpoints you register from the workspace.
-        This is one of Trooth's two webhook channels: these endpoints are
-        delivered by the worker at `api.trooth.co`. Every delivery on this
-        channel carries two headers. `x-trooth-signature` is the HMAC-SHA256 of
-        the raw request body, keyed with your endpoint's signing secret, as 64
-        lowercase hex characters with no prefix. `x-trooth-event` repeats the
-        event type. This channel sends no timestamp header, and the signed bytes
-        are the body and nothing else.
+        These endpoints are delivered by the worker at `api.trooth.co`; profile
+        subscriptions are signed the same way with a different envelope, and
+        alert destinations are a third channel described below. Check version
+        2: every delivery carries `x-trooth-delivery-timestamp`, unix seconds,
+        set once per event and the same on every attempt, and
+        `x-trooth-signature-v2`, which is `v2=` followed by the HMAC-SHA256,
+        keyed with your endpoint's signing secret, of the timestamp, a full stop
+        and the raw body, as 64 lowercase hex characters. Refuse a timestamp
+        more than 300 seconds from your clock and compare in constant time; a
+        delivery without the version 2 headers is refused, not checked against
+        version 1. `x-trooth-event` repeats the event type.
 
-        Compute the same HMAC over the exact bytes you received, before any
-        JSON parsing, and compare in constant time. Deduplicate on the event
-        `id`: no timestamp is signed on this channel, so that is what makes a
-        replayed delivery harmless. Trooth makes one attempt per event and
-        records the status in the delivery log; it does not retry on its own.
+        Version 1, `x-trooth-signature`, is the HMAC-SHA256 of the raw body
+        alone, 64 lowercase hex characters with no prefix. It is still sent,
+        unchanged, for receivers written before 2026-09-26. On this channel no
+        timestamp is signed in it, so it verifies a replayed delivery forever;
+        use it only if you cannot yet read version 2, and deduplicate on the
+        event `id` either way. Each event is attempted up to three times, after
+        a connection failure, a 408, a 429 or a 5xx, with the same bytes, id and
+        signed timestamp, and every attempt is recorded in the delivery log.
 
         The endpoint must be a public HTTPS URL. Loopback, link-local, private
         and cloud-metadata addresses are refused at registration and at delivery.
 
-        The other channel is the alert destinations a workspace configures under
+        The third channel is the alert destinations a workspace configures under
         Alerts. Those are delivered by the Trooth application rather than the
         worker, and they share this header name while signing different bytes:
         `x-trooth-timestamp` carries the Unix second the delivery was signed at,
@@ -208,10 +215,12 @@ webhooks:
         recipe is at /docs#webhooks. This operation does not describe that
         channel, and a receiver built from it rejects every delivery from it.
       parameters:
-        - { name: x-trooth-signature, in: header, required: true, description: "HMAC-SHA256 of the raw request body, keyed with the endpoint secret; 64 lowercase hex characters, no prefix.", schema: { type: string, pattern: "^[0-9a-f]{64}$" } }
+        - { name: x-trooth-delivery-timestamp, in: header, required: true, description: "Unix seconds, set once per event and the same on every attempt. Signed into x-trooth-signature-v2.", schema: { type: string, pattern: "^[0-9]+$" } }
+        - { name: x-trooth-signature-v2, in: header, required: true, description: "v2= and the HMAC-SHA256, keyed with the endpoint secret, of the timestamp, a full stop and the raw body; 64 lowercase hex characters. The signature to check.", schema: { type: string, pattern: "^v2=[0-9a-f]{64}$" } }
+        - { name: x-trooth-signature, in: header, required: true, description: "Version 1, for receivers written before 2026-09-26: HMAC-SHA256 of the raw request body alone, keyed with the endpoint secret; 64 lowercase hex characters, no prefix. No timestamp is signed in it on this channel.", schema: { type: string, pattern: "^[0-9a-f]{64}$" } }
         - { name: x-trooth-event, in: header, required: true, description: "The event type, repeated from the body.", schema: { type: string } }
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/WebhookEvent' } } } }
-      responses: { "2XX": { description: Acknowledge once the event is stored. A non-2xx is recorded in the delivery log and the event is not re-sent automatically. } }
+      responses: { "2XX": { description: Acknowledge once the event is stored. A connection failure, 408, 429 or 5xx is attempted again, up to three attempts in all; every attempt is recorded in the delivery log. } }
 
 components:
   parameters:
