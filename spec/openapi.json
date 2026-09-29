@@ -62,6 +62,56 @@
               "contractVersion": {
                 "type": "integer",
                 "minimum": 1
+              },
+              "ambiguous": {
+                "type": "boolean",
+                "description": "True when q is a company name that several published companies carry (REQ-4-1629). No record was chosen; candidates lists what the name could mean. Additive in contract 2 (2026-09-29)."
+              },
+              "candidates": {
+                "type": "array",
+                "description": "Present with ambiguous. Each published company the name could mean, ordered by slug (an order that suggests none), with the exact query that selects it.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "slug",
+                    "name",
+                    "domain",
+                    "profileUrl",
+                    "select"
+                  ],
+                  "properties": {
+                    "slug": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "domain": {
+                      "oneOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "profileUrl": {
+                      "type": "string"
+                    },
+                    "select": {
+                      "type": "string",
+                      "description": "Send this as q to read this company's record and no other."
+                    }
+                  }
+                }
+              },
+              "candidatesTotal": {
+                "type": "integer",
+                "minimum": 2
+              },
+              "candidatesTruncated": {
+                "type": "boolean"
               }
             }
           },
@@ -253,6 +303,42 @@
                     ]
                   },
                   "note": {
+                    "type": "string"
+                  }
+                }
+              },
+              "factFreshnessStatuses": {
+                "type": "object",
+                "description": "One sentence of meaning for each value of facts[].record.freshness.status.",
+                "required": [
+                  "current",
+                  "due",
+                  "stale",
+                  "not_collected",
+                  "unknown",
+                  "unavailable",
+                  "disputed"
+                ],
+                "properties": {
+                  "current": {
+                    "type": "string"
+                  },
+                  "due": {
+                    "type": "string"
+                  },
+                  "stale": {
+                    "type": "string"
+                  },
+                  "not_collected": {
+                    "type": "string"
+                  },
+                  "unknown": {
+                    "type": "string"
+                  },
+                  "unavailable": {
+                    "type": "string"
+                  },
+                  "disputed": {
                     "type": "string"
                   }
                 }
@@ -635,6 +721,190 @@
                     }
                   }
                 }
+              },
+              "record": {
+                "type": "object",
+                "description": "Per-fact identity, issuer, method version and freshness, additive in contract 2 (2026-09-29, REQ-4-1640 and REQ-4-1588). freshness.status tells seven answers apart instead of one null: current, due and stale are a dated observation against its category window; not_collected is a company statement Trooth does not re-read; unknown is an origin with no recorded observation time or an unreadable date; unavailable is a source not read on this pass; disputed means another account is in conflicts. Fields Trooth does not hold are null and explained in unknown.",
+                "required": [
+                  "companyId",
+                  "canonicalDomain",
+                  "recordVersion",
+                  "factId",
+                  "provenanceKind",
+                  "issuer",
+                  "sourceReference",
+                  "observedAt",
+                  "attestedAt",
+                  "collectedAt",
+                  "evidenceReference",
+                  "methodVersion",
+                  "freshness",
+                  "unknown"
+                ],
+                "properties": {
+                  "companyId": {
+                    "type": "string"
+                  },
+                  "canonicalDomain": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "recordVersion": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "factId": {
+                    "type": "string"
+                  },
+                  "provenanceKind": {
+                    "enum": [
+                      "company_declaration",
+                      "trooth_observation",
+                      "public_record"
+                    ]
+                  },
+                  "issuer": {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "name"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "company",
+                          "trooth",
+                          "public_source"
+                        ]
+                      },
+                      "name": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "sourceReference": {
+                    "type": "string"
+                  },
+                  "observedAt": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "attestedAt": {
+                    "type": "null"
+                  },
+                  "collectedAt": {
+                    "type": "null"
+                  },
+                  "evidenceReference": {
+                    "type": "null"
+                  },
+                  "methodVersion": {
+                    "type": "string"
+                  },
+                  "freshness": {
+                    "type": "object",
+                    "required": [
+                      "status",
+                      "collection",
+                      "lastObservedAt",
+                      "windowDays",
+                      "windowCategory",
+                      "nextExpectedRefresh"
+                    ],
+                    "properties": {
+                      "status": {
+                        "enum": [
+                          "current",
+                          "due",
+                          "stale",
+                          "not_collected",
+                          "unknown",
+                          "unavailable",
+                          "disputed"
+                        ]
+                      },
+                      "collection": {
+                        "enum": [
+                          "declared_by_company",
+                          "read_by_trooth",
+                          "public_source"
+                        ]
+                      },
+                      "lastObservedAt": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "windowDays": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        ]
+                      },
+                      "windowCategory": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "nextExpectedRefresh": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "unknown": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           },
@@ -757,6 +1027,88 @@
           "message": {
             "type": "string",
             "description": "The same reason, as a sentence."
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "description": "RFC 9457 problem details, served instead of the Error body when the request's Accept header names application/problem+json. Every other caller receives the Error body. Unknown members must be ignored (RFC 9457 section 3.2).",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "request_id",
+          "retryable",
+          "next_action"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "description": "Stable per code; resolves to the code's entry at https://trooth.co/developers#problem-<code>."
+          },
+          "title": {
+            "type": "string",
+            "description": "Fixed per type."
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string",
+            "description": "This occurrence, in words. Never a stack, a path or a credential."
+          },
+          "instance": {
+            "type": "string",
+            "description": "urn:trooth:request:<request_id>"
+          },
+          "code": {
+            "type": "string",
+            "description": "The stable machine code, one of those listed at https://trooth.co/developers#errors."
+          },
+          "request_id": {
+            "type": "string",
+            "description": "The same value as the X-Request-Id response header."
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after": {
+            "type": "integer",
+            "description": "Seconds, the same number as Retry-After. Present only when a wait is known."
+          },
+          "retry_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "retry_later",
+              "fix_request",
+              "start_over",
+              "resync",
+              "use_current_record",
+              "none"
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pointer": {
+                  "type": "string"
+                },
+                "parameter": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       },
@@ -1163,6 +1515,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -1172,6 +1529,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1202,6 +1564,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1244,6 +1611,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -1254,6 +1626,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           }
@@ -1263,7 +1640,7 @@
     "/api/public-mesh/{handle}": {
       "get": {
         "summary": "A company's public evidence rollup",
-        "description": "The buyer-facing projection of a company's evidence: the witnessed state per pillar, provider status with the time each connected system was last read. Framework rollups were retired on 2026-09-26 and the frameworks array is always empty. Individual control rows, owners and internal notes are never returned here. Responds 404 when the company has no public record, which is a privacy-preserving answer rather than an error. Readable cross-origin (Access-Control-Allow-Origin: *); this is the read the embeddable badge performs. Cached at the edge for 300 seconds.",
+        "description": "The buyer-facing projection of a company's evidence: the witnessed state per area (the pillars key), provider status with the time each connected system was last read. Framework rollups were retired on 2026-09-26 and the frameworks array is always empty. Individual control rows, owners and internal notes are never returned here. Responds 404 when the company has no public record, which is a privacy-preserving answer rather than an error. Readable cross-origin (Access-Control-Allow-Origin: *); this is the read the embeddable badge performs. Cached at the edge for 300 seconds.",
         "parameters": [
           {
             "name": "handle",
@@ -1295,6 +1672,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -1304,6 +1686,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1356,7 +1743,7 @@
             "name": "after",
             "in": "query",
             "required": false,
-            "description": "The selection.next cursor from the previous page. It is bound to the record version and to the sections asked for: if the company publishes a new version between pages, the cursor is refused with 400 (stale_cursor) rather than served from a different record.",
+            "description": "The selection.next cursor from the previous page. It is bound to the record version and to the sections asked for: if the company publishes a new version between pages, the cursor is refused with 400 (stale_cursor) rather than served from a different record. A cursor also expires 24 hours after the page that issued it and is then refused with 400 (cursor_expired).",
             "schema": {
               "type": "string"
             }
@@ -1382,6 +1769,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -1391,6 +1783,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1433,6 +1830,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -1442,6 +1844,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1514,6 +1921,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
