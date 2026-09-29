@@ -190,6 +190,72 @@
               "relationships": {
                 "type": "object",
                 "description": "What a listed relationship does and does not establish. Additive in contract 2 (2026-09-26)."
+              },
+              "selection": {
+                "type": "object",
+                "description": "Which part of the record this response carries (REQ-4-1630). sections is the list asked for with ?sections=, or \"all\". recordVersion is the profile update time the page belongs to. total is how many facts the selected sections hold, returned how many this page carries, and truncated says whether any were left out; when it is true, next is a cursor to send as ?after= for the rest, refused as stale if the company publishes a new version in between. conflicts carries only the disagreements about facts on this page, and a contested fact stays marked.",
+                "required": [
+                  "sections",
+                  "recordVersion",
+                  "limit",
+                  "returned",
+                  "total",
+                  "truncated",
+                  "next"
+                ],
+                "properties": {
+                  "sections": {
+                    "oneOf": [
+                      {
+                        "const": "all"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "enum": [
+                            "identity",
+                            "registration",
+                            "hosting",
+                            "pricing",
+                            "pricing-add-ons",
+                            "security",
+                            "privacy",
+                            "privacy-roles",
+                            "recovery"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "recordVersion": {
+                    "type": "string"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Facts per page as served, at most 200."
+                  },
+                  "returned": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "truncated": {
+                    "type": "boolean"
+                  },
+                  "next": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
               }
             },
             "not": {
@@ -1263,7 +1329,34 @@
             "name": "contract",
             "in": "query",
             "required": false,
-            "description": "Pin the response contract version, here or in the Trooth-Contract request header (not both with different values, which is refused with 400). Omit for the current contract. A version this deployment does not answer is refused with 400 rather than approximated. Every response names the contract that served it in the Trooth-Contract response header and in contractVersion, and the one requested in requestedContract; a request for contract 1 is served contract 2 with Deprecation and Sunset headers until 2027-03-01.",
+            "description": "Pin the response contract version, here or in the Trooth-Contract request header (not both with different values, which is refused with 400). Omit for the current contract. A version this deployment does not answer is refused with 400 rather than approximated. Every response names the contract that served it in the Trooth-Contract response header and in contractVersion, and the one requested in requestedContract; a request for contract 1 is served contract 1 itself, with Deprecation and Sunset headers, until its withdrawal on 2027-03-01, leaving out every fact two sources answered differently and naming each in withheldContested.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sections",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated categories to return facts from: identity, registration, hosting, pricing, pricing-add-ons, security, privacy, privacy-roles, recovery. Omit for all. An unknown name is refused with 400 and the valid list; a section's conflicts travel with its facts.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Facts per page, 1 to 200. With limit or after, a page carries up to 100 facts unless limit says otherwise; with neither, the response carries every fact in the selected sections. The response's selection object says how many facts the selected sections hold, how many this page carries and whether it was truncated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "The selection.next cursor from the previous page. It is bound to the record version and to the sections asked for: if the company publishes a new version between pages, the cursor is refused with 400 (stale_cursor) rather than served from a different record.",
             "schema": {
               "type": "string"
             }
@@ -1283,7 +1376,7 @@
             }
           },
           "400": {
-            "description": "The q parameter is missing, a contract version this deployment does not answer was requested, or the query and the Trooth-Contract header asked for different contracts.",
+            "description": "The q parameter is missing, a contract version this deployment does not answer was requested, the query and the Trooth-Contract header asked for different contracts, a section name or limit could not be applied exactly, or an after cursor is malformed, stale or was issued for other sections.",
             "content": {
               "application/json": {
                 "schema": {
