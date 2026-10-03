@@ -271,7 +271,8 @@
                             "security",
                             "privacy",
                             "privacy-roles",
-                            "recovery"
+                            "recovery",
+                            "ai-practices"
                           ]
                         }
                       }
@@ -1356,6 +1357,192 @@
           },
           "retired": {
             "type": "object"
+          },
+          "states": {
+            "type": "array",
+            "description": "The cell states, in the words the comparison page prints. A cell with a plain answer has the state answered, which needs no legend entry.",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "label",
+                "meaning"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "meaning": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "comparison": {
+            "type": "object",
+            "required": [
+              "comparedAt",
+              "companies",
+              "rows"
+            ],
+            "properties": {
+              "comparedAt": {
+                "type": "string"
+              },
+              "snapshot": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "savedAt": {
+                    "type": "string"
+                  }
+                }
+              },
+              "companies": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "key",
+                    "state"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "listed",
+                        "not-listed",
+                        "unread"
+                      ]
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "slug": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recordVersion": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "recordAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "key",
+                    "category",
+                    "label",
+                    "cells"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "not-like-for-like when a stated edition, period or scope differs; otherwise null."
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "cells": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "state",
+                          "label",
+                          "flags"
+                        ],
+                        "properties": {
+                          "state": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "flags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "conflicting",
+                                "outdated"
+                              ]
+                            }
+                          },
+                          "origin": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "scope": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "dating": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -1725,7 +1912,7 @@
             "name": "sections",
             "in": "query",
             "required": false,
-            "description": "Comma-separated categories to return facts from: identity, registration, hosting, pricing, pricing-add-ons, security, privacy, privacy-roles, recovery. Omit for all. An unknown name is refused with 400 and the valid list; a section's conflicts travel with its facts.",
+            "description": "Comma-separated categories to return facts from: identity, registration, hosting, pricing, pricing-add-ons, security, privacy, privacy-roles, recovery, ai-practices. Omit for all. An unknown name is refused with 400 and the valid list; a section's conflicts travel with its facts.",
             "schema": {
               "type": "string"
             }
@@ -1798,13 +1985,22 @@
     "/api/compare": {
       "get": {
         "summary": "Compare companies side by side",
-        "description": "A comparison of published witnessed facts across up to a handful of companies. Control rows are stripped, so a company's internal posture is never exposed through the comparison. Rate limited.",
+        "description": "A comparison of published witnessed facts across up to four companies. Control rows are stripped, so a company's internal posture is never exposed through the comparison. `comparison` is the table a person sees on /compare, decided by the same module: every cell carries one of the states in `states`, the legend the page prints. A parameter at.<handle>=<n> reads that company at stored record version n, as a dated comparison link does. Rate limited.",
         "parameters": [
           {
             "name": "handles",
             "in": "query",
-            "required": true,
-            "description": "Comma-separated company handles.",
+            "required": false,
+            "description": "Comma-separated company handles. Required unless snapshot is given.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "description": "A saved comparison snapshot id (cs_ and 32 hex). Answers that snapshot: its companies, each read at the record version saved with it.",
             "schema": {
               "type": "string"
             }
@@ -1819,6 +2015,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Comparison"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No saved snapshot answers this id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1840,6 +2051,21 @@
           },
           "502": {
             "description": "No company in the request could be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The saved snapshot could not be read just now.",
             "content": {
               "application/json": {
                 "schema": {
