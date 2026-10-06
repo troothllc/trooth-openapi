@@ -1,0 +1,481 @@
+# Trooth Network API: the public contract for api.trooth.co.
+#
+# Served at https://trooth.co/openapi.yaml. The contract for the trooth.co host
+# is a separate document, https://trooth.co/openapi.json. Every path below has a
+# handler at api.trooth.co, and every schema describes the body that host sends.
+#
+# Two wire names are kept exactly as sent even though they carry a retired
+# product name: one response header name, and the value of the poweredBy field.
+# A contract that renamed a wire name would be wrong for every reader that
+# matches on it, so the header is spelled as sent and poweredBy is described as
+# the opaque constant it is.
+openapi: 3.1.0
+info:
+  title: Trooth Network API
+  version: "1.0"
+  # Pre-launch. One public contract, versioned 1.0, released on the date below.
+  x-released: "2026-08-22"
+  summary: >-
+    The public API of the Trooth Network, which is Trooth's only product and is
+    free. DNS says where a company is; Trooth says who it is.
+  description: |
+    The public contract for api.trooth.co. Public reads need no key.
+    Authenticated reads use a Bearer token, which is either a session token or a
+    tenant API key beginning with `tk_`, created from the workspace and
+    revocable there.
+
+    This document lists only routes that exist. It is deliberately smaller than
+    the API: session-scoped workspace routes, authentication flows and
+    unauthenticated endpoints that send mail or start work are not published
+    here.
+
+    Boundary, enforced in every response and never softened: Trooth witnesses
+    and dates facts. It does not grade, rate or rank anyone, it never
+    signs a company's claims on its behalf, and it issues no certification.
+    Every value here is *witnessed* evidence - what a reading found,
+    from a named source, on a stated date - and not an attestation. Consumers
+    confirm independently.
+
+    Every response carries `X-Trooth-OS-Disclaimer` and `X-Trooth-Automation`
+    headers, and the public Trust Profile carries `disclaimer` and
+    `disclaimer_url` in its body. The first of those header names carries a
+    product name this business retired. It is spelled exactly as the worker
+    sends it, because a contract that renames a wire header breaks the reader
+    matching on it; the rename belongs in the worker, and is reported there
+    rather than hidden behind a description that disagrees with the wire.
+  contact: { name: Trooth, url: https://trooth.co, email: hello@trooth.co }
+  license: { name: Terms of Service, url: https://trooth.co/terms }
+
+servers:
+  - url: https://api.trooth.co
+    description: Production
+
+# A tag inside a contract reads as a thing on offer, which is why the seven
+# capability tags carrying no operation were deleted in the pass above. The
+# three that still carried one kept their capability labels, and so kept three
+# retired product names on a live public surface. These name the operation,
+# which is the whole job of a tag.
+tags:
+  - name: Public profile
+    description: The public record of one company, readable with no key.
+  - name: Questionnaire drafts
+    description: Draft answers to an inbound security questionnaire, each drawn from the company's own witnessed evidence.
+  - name: Buyer intent
+    description: Buyers who submitted interest in a company through the public marketplace.
+  - name: Webhooks
+    description: Signed state-change events delivered to your endpoint.
+
+paths:
+  # ---------------- Public profile (no key) ----------------
+  /public/trust/{slug}:
+    get:
+      tags: [Public profile]
+      operationId: getPublicTrustProfile
+      summary: Get a company's public Trust Profile
+      description: |
+        The public projection of one company's witnessed posture: pillar counts,
+        audit-chain evidence and an AI profile. No key.
+
+        The slug is matched exactly against the company id and the company
+        domain, and then against the slug the workspace hands out, so
+        `co-example-com`, `example.com` and a workspace slug all resolve. There
+        is no sample slug; an identifier the Network does not hold is simply
+        unknown.
+
+        This is the canonical schema for this route. No rate limit is applied
+        to it.
+
+        A company that has published a canonical profile on the Trooth Network
+        has exactly one profile there, and this route answers 404 with that
+        canonical URL rather than serving a second representation.
+
+        No figure is published for a company. None appears on the public page,
+        so none appears here either; `lastReading` carries the date of the most
+        recent reading and nothing else.
+      security: []
+      parameters: [{ $ref: '#/components/parameters/slug' }]
+      responses:
+        "200":
+          description: The published Trust Profile.
+          content: { application/json: { schema: { $ref: '#/components/schemas/PublicTrustProfile' } } }
+        "404":
+          description: |
+            No published profile at this identifier. Three distinct answers share
+            this status: the company is unclaimed, the owner has claimed it and
+            chosen not to publish, or the profile has moved to a canonical page
+            on the Trooth Network. Privacy is a valid choice and is not a
+            negative signal.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: '#/components/schemas/UnpublishedProfile' }
+                  - { $ref: '#/components/schemas/MovedToCanonical' }
+        "500": { $ref: '#/components/responses/ServerError' }
+
+  # ---------------- Questionnaire drafts ----------------
+  /v1/questionnaire/answer:
+    post:
+      tags: [Questionnaire drafts]
+      operationId: answerQuestionnaire
+      summary: Draft answers from witnessed evidence
+      description: |
+        Answers inbound security-questionnaire questions from your own witnessed
+        evidence and from knowledge-base entries you have already approved.
+        Anything not drawn from one of those is returned with status
+        `needs_review` and routed to a human, never fabricated.
+
+        Drafts only. You review and send; Trooth never submits or signs on your
+        behalf.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: phrase
+          in: query
+          description: >-
+            Set to 1, true or yes to reword answers that already carry a source into
+            cleaner prose. Items routed for review are never sent to the model,
+            and the grounding source stays attached, so this is presentation on
+            top of fact and never a new claim. Ignored when no model binding is
+            available.
+          schema: { type: string, enum: ["1", "true", "yes"] }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/QuestionnaireRequest' } } }
+      responses:
+        "200":
+          description: Draft answers with the source each one is drawn from.
+          content: { application/json: { schema: { $ref: '#/components/schemas/QuestionnaireAnswers' } } }
+        "400":
+          description: The body carried no usable questions array.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: questions_required } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "500": { $ref: '#/components/responses/ServerError' }
+
+  # ---------------- Buyer intent ----------------
+  /v1/marketplace/leads:
+    get:
+      tags: [Buyer intent]
+      operationId: listLeads
+      summary: Buyer-intent leads from the public marketplace
+      description: >-
+        Buyers who submitted interest in your company through POST
+        /public/marketplace/intent, newest first, capped at 300. Buyer demand,
+        surfaced. You decide what to do with it.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: The leads this company has received.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LeadPage' } } }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "500": { $ref: '#/components/responses/ServerError' }
+
+webhooks:
+  troothEvent:
+    post:
+      tags: [Webhooks]
+      operationId: onTroothEvent
+      summary: Trooth to your endpoint (signed)
+      description: |
+        Trooth POSTs a JSON event to endpoints you register from the workspace.
+        These endpoints are delivered by the worker at `api.trooth.co`; profile
+        subscriptions are signed the same way with a different envelope, and
+        alert destinations are a third channel described below. Check version
+        2: every delivery carries `x-trooth-delivery-timestamp`, unix seconds,
+        set once per event and the same on every attempt, and
+        `x-trooth-signature-v2`, which is `v2=` followed by the HMAC-SHA256,
+        keyed with your endpoint's signing secret, of the timestamp, a full stop
+        and the raw body, as 64 lowercase hex characters. Refuse a timestamp
+        more than 300 seconds from your clock and compare in constant time; a
+        delivery without the version 2 headers is refused, not checked against
+        version 1. `x-trooth-event` repeats the event type.
+
+        Version 1, `x-trooth-signature`, is the HMAC-SHA256 of the raw body
+        alone, 64 lowercase hex characters with no prefix. It is still sent,
+        unchanged, for receivers written before 2026-09-26. On this channel no
+        timestamp is signed in it, so it verifies a replayed delivery forever;
+        use it only if you cannot yet read version 2, and deduplicate on the
+        event `id` either way. Each event is attempted up to three times, after
+        a connection failure, a 408, a 429 or a 5xx, with the same bytes, id and
+        signed timestamp, and every attempt is recorded in the delivery log.
+
+        The endpoint must be a public HTTPS URL. Loopback, link-local, private
+        and cloud-metadata addresses are refused at registration and at delivery.
+
+        The third channel is the alert destinations a workspace configures under
+        Alerts. Those are delivered by the Trooth application rather than the
+        worker, and they share this header name while signing different bytes:
+        `x-trooth-timestamp` carries the Unix second the delivery was signed at,
+        `x-trooth-signature` is `sha256=` followed by the HMAC-SHA256 of that
+        timestamp, a full stop and the body, and the key is derived for each
+        destination rather than issued per endpoint. That header carries two
+        comma-separated values for the seven days after a destination's key is
+        rotated - the new key first and the one it replaced second - so a
+        receiver on that channel splits the header on commas, trims each value,
+        and accepts the delivery if any value matches. Its
+        recipe is at /docs#webhooks. This operation does not describe that
+        channel, and a receiver built from it rejects every delivery from it.
+      parameters:
+        - { name: x-trooth-delivery-timestamp, in: header, required: true, description: "Unix seconds, set once per event and the same on every attempt. Signed into x-trooth-signature-v2.", schema: { type: string, pattern: "^[0-9]+$" } }
+        - { name: x-trooth-signature-v2, in: header, required: true, description: "v2= and the HMAC-SHA256, keyed with the endpoint secret, of the timestamp, a full stop and the raw body; 64 lowercase hex characters. The signature to check.", schema: { type: string, pattern: "^v2=[0-9a-f]{64}$" } }
+        - { name: x-trooth-signature, in: header, required: true, description: "Version 1, for receivers written before 2026-09-26: HMAC-SHA256 of the raw request body alone, keyed with the endpoint secret; 64 lowercase hex characters, no prefix. No timestamp is signed in it on this channel.", schema: { type: string, pattern: "^[0-9a-f]{64}$" } }
+        - { name: x-trooth-event, in: header, required: true, description: "The event type, repeated from the body.", schema: { type: string } }
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/WebhookEvent' } } } }
+      responses: { "2XX": { description: "Acknowledge once the event is stored. A connection failure, 408, 429 or 5xx is attempted again, up to three attempts in all; every attempt is recorded in the delivery log." } }
+
+components:
+  parameters:
+    slug:
+      name: slug
+      in: path
+      required: true
+      description: A company id or a company domain, for example `example.com`.
+      schema: { type: string, pattern: "^[a-z0-9](?:[a-z0-9.-]{0,98}[a-z0-9])?$" }
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        A session token, or a tenant API key beginning with `tk_` created from
+        the workspace. Keys are stored as a hash only, are shown once, and
+        revoke immediately. Header: `Authorization: Bearer <token>`.
+
+  responses:
+    ServerError:
+      description: Unexpected server error. Safe to retry with backoff.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: internal_error, message: "Something went wrong." } } }
+    Unauthorized:
+      description: Missing, expired or invalid Bearer token.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: unauthorized, message: "Authentication required." } } }
+
+  schemas:
+    PublicTrustProfile:
+      type: object
+      required: [profile, pillarSummary, chainEvidence, poweredBy, disclaimer]
+      properties:
+        profile:
+          type: object
+          properties:
+            displayName: { type: string }
+            domain: { type: [string, "null"] }
+            jurisdiction: { type: string, example: US }
+        lastReading:
+          type: [object, "null"]
+          description: >-
+            The most recent reading, or null when none has been recorded.
+            Carries the date only. Trooth publishes no figure for a company.
+          properties:
+            readAt: { type: integer, description: Epoch milliseconds. When Trooth last read the evidence behind this profile. }
+        pillarSummary:
+          type: object
+          description: Counts across the 25 pillars.
+          properties:
+            total: { type: integer, const: 25 }
+            green: { type: integer }
+            amber: { type: integer }
+            red: { type: integer }
+        chainEvidence:
+          type: object
+          properties:
+            auditBlockCount: { type: integer }
+            chainIntegrity: { type: string, enum: [intact, broken, empty] }
+            integrityCheck: { type: string, example: hash-linkage }
+        aiProfile: { $ref: '#/components/schemas/AiProfile' }
+        poweredBy:
+          type: string
+          description: >-
+            A fixed branding constant. It is always present and always the same
+            string; it says nothing about the company, the profile or the
+            request, and nothing should parse it or branch on it. Its value is
+            a product name this business retired, so it is not reprinted on a
+            public surface - the worker that still sends it is where that gets
+            fixed, and the const is dropped here rather than republished.
+        disclaimer: { type: string }
+        disclaimer_url: { type: string, format: uri }
+    AiProfile:
+      type: object
+      description: The AI posture block on the public card, assembled from the company's own AI inventory, screening history and governance controls.
+      properties:
+        systemsTotal: { type: integer }
+        byRiskTier:
+          type: object
+          description: Counts keyed by EU AI Act risk classification, plus `unclassified`.
+          additionalProperties: { type: integer }
+        byKind:
+          type: object
+          description: Counts keyed by system kind, for example model, agent, application, dataset.
+          additionalProperties: { type: integer }
+        agents: { type: integer }
+        guard:
+          type: object
+          properties:
+            active: { type: boolean }
+            lastScreenedAt: { type: [integer, "null"], description: Epoch milliseconds. }
+            lastRisk: { type: [string, "null"] }
+        governance:
+          type: object
+          properties:
+            frameworks:
+              type: array
+              items:
+                type: object
+                properties:
+                  name: { type: string, example: ISO 42001 }
+                  satisfied: { type: integer }
+                  total: { type: integer }
+            assessments: { type: integer }
+        highlights: { type: array, items: { type: string } }
+        hasAi: { type: boolean }
+    UnpublishedProfile:
+      type: object
+      description: Returned with status 404 when the Network holds no readable profile at this identifier.
+      required: [slug, status, measured, provenance, message]
+      properties:
+        slug: { type: string }
+        status: { type: string, enum: [unclaimed, private] }
+        measured: { type: boolean, description: "False when unclaimed, true when claimed but withheld." }
+        provenance: { type: string, enum: [honest_absence, withheld_by_owner] }
+        message: { type: string }
+        claim:
+          type: object
+          properties:
+            action: { type: string }
+            claim_url: { type: string, format: uri }
+            who_can_claim: { type: string }
+            what_changes: { type: string }
+        also_available:
+          type: object
+          description: Present only on an unclaimed record.
+          properties:
+            outside_in: { type: string }
+    MovedToCanonical:
+      type: object
+      description: Returned with status 404 when the company has one canonical profile on the Trooth Network.
+      required: [error, message, canonicalUrl]
+      properties:
+        error: { type: string, const: moved }
+        message: { type: string }
+        canonicalUrl: { type: string, format: uri }
+    QuestionnaireRequest:
+      type: object
+      required: [questions]
+      properties:
+        questions:
+          type: array
+          description: At most 200 questions are read. Each is truncated to 600 characters.
+          maxItems: 200
+          items: { type: string, maxLength: 600 }
+    QuestionnaireAnswers:
+      type: object
+      properties:
+        count: { type: integer }
+        auto_answered: { type: integer }
+        needs_review: { type: integer }
+        answers: { type: array, items: { $ref: '#/components/schemas/DraftAnswer' } }
+        phrased: { type: boolean, description: Whether AI phrasing actually ran. }
+        note: { type: string }
+    DraftAnswer:
+      type: object
+      required: [question, answer, status, confidence, source]
+      properties:
+        question: { type: string }
+        answer: { type: string }
+        status:
+          type: string
+          enum: [answered, needs_review]
+          description: You review and send either way. Trooth never submits.
+        confidence: { type: string, enum: [high, medium, low, none] }
+        source:
+          type: string
+          enum: [knowledge_base, witnessed_evidence, crosswalk, routed]
+          description: What the answer is drawn from. `routed` means nothing was found and a human must respond.
+        control: { type: string, description: "The control area or framework the question was matched to, when one was matched." }
+        groundedAnswer: { type: string, description: Present only when AI phrasing rewrote the answer. Carries the original grounded wording. }
+        phrased: { type: boolean, description: Present only when AI phrasing rewrote the answer. }
+    LeadPage:
+      type: object
+      properties:
+        leads: { type: array, items: { $ref: '#/components/schemas/Lead' } }
+        count: { type: integer }
+    Lead:
+      type: object
+      properties:
+        id: { type: string, example: mi_0f8b1c3e-4a2d-4f11-9c7a-2b6d5e8f0a13 }
+        buyer_email: { type: [string, "null"] }
+        buyer_company: { type: [string, "null"] }
+        message: { type: [string, "null"] }
+        created_at: { type: integer, description: Epoch milliseconds. }
+    WebhookEvent:
+      type: object
+      required: [id, type, created, data]
+      properties:
+        id: { type: string, example: evt_9f2c4a1b7e03 }
+        type: { type: string, enum: [witness.changed, control.witnessed, profile.viewed, profile.requested, monitoring.drift], description: "`control.verified`, and the earlier name of `witness.changed`, are accepted as legacy names when you register an endpoint and are delivered as `control.witnessed` and `witness.changed`. `profile.requested` is accepted at registration and is not sent today. Deliveries to a subscription made with POST /public/trust/{slug}/agent-subscribe are a separate system: their type is `trust.posture.changed` and their envelope is not this one." }
+        created: { type: integer, description: Epoch milliseconds. }
+        data:
+          description: Event-specific payload. The shape depends on the type, and the sender does not wrap it.
+          oneOf:
+            - { $ref: '#/components/schemas/WitnessChanged' }
+            - { $ref: '#/components/schemas/ControlWitnessed' }
+            - { $ref: '#/components/schemas/ProfileViewed' }
+            - { $ref: '#/components/schemas/MonitoringDrift' }
+      example:
+        id: evt_9f2c4a1b7e03
+        type: profile.viewed
+        created: 1785340800000
+        data: { slug: example.com, referrer: "https://trooth.co/network", at: 1785340800000 }
+    WitnessChanged:
+      type: object
+      description: >-
+        Payload for witness.changed. Witnessed coverage moved: `passed` counts the checks that read as
+        expected and `run` the checks run, with the previous pair and the difference.
+        Counts only; Trooth publishes no figure.
+      properties:
+        coverage:
+          type: object
+          properties: { passed: { type: integer }, run: { type: integer } }
+        previous:
+          type: [object, "null"]
+          properties: { passed: { type: integer }, run: { type: integer } }
+        change:
+          type: object
+          properties: { passed: { type: [integer, "null"] }, run: { type: [integer, "null"] } }
+        source: { type: string, example: capability }
+        changed_at: { type: integer, description: Epoch milliseconds. }
+    ControlWitnessed:
+      type: object
+      description: Payload for control.witnessed.
+      properties:
+        controlId: { type: string }
+        status: { type: string, example: passed }
+    ProfileViewed:
+      type: object
+      description: Payload for profile.viewed.
+      properties:
+        slug: { type: string }
+        referrer: { type: string }
+        at: { type: integer, description: Epoch milliseconds. }
+    MonitoringDrift:
+      type: object
+      description: Payload for monitoring.drift. One event per workspace per re-witness run.
+      properties:
+        count: { type: integer }
+        changes:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              provider_key: { type: string }
+              summary: { type: string }
+              direction: { type: string, example: connection_lost }
+              prev_status: { type: string }
+              new_status: { type: string }
+        url: { type: string, format: uri }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string, enum: [unauthorized, questions_required, moved, internal_error, bad_json, bad_request] }
+        message: { type: string }
