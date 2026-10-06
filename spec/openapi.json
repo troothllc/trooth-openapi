@@ -51,17 +51,21 @@
             ],
             "properties": {
               "found": {
-                "const": false
+                "const": false,
+                "description": "Always false in this branch: no published profile answers the query."
               },
               "error": {
-                "type": "string"
+                "type": "string",
+                "description": "A short machine code for why nothing was returned (for example missing q, rate_limited, unsupported_contract_version, profile_read_unavailable). Absent when the Network simply holds no profile for the query."
               },
               "message": {
-                "type": "string"
+                "type": "string",
+                "description": "The same reason as a sentence, when there is one."
               },
               "contractVersion": {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1,
+                "description": "The contract version this body follows."
               },
               "ambiguous": {
                 "type": "boolean",
@@ -81,10 +85,12 @@
                   ],
                   "properties": {
                     "slug": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The company's slug on the Network."
                     },
                     "name": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The company name as published."
                     },
                     "domain": {
                       "oneOf": [
@@ -94,10 +100,12 @@
                         {
                           "type": "string"
                         }
-                      ]
+                      ],
+                      "description": "The company's domain, or null when none is published."
                     },
                     "profileUrl": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The company's public Trust Profile page."
                     },
                     "select": {
                       "type": "string",
@@ -108,10 +116,12 @@
               },
               "candidatesTotal": {
                 "type": "integer",
-                "minimum": 2
+                "minimum": 2,
+                "description": "How many published companies carry the name, when ambiguous."
               },
               "candidatesTruncated": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "True when candidates lists fewer companies than candidatesTotal."
               }
             }
           },
@@ -137,29 +147,35 @@
             ],
             "properties": {
               "found": {
-                "const": true
+                "const": true,
+                "description": "Always true in this branch: a published profile answers the query."
               },
               "contractVersion": {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1,
+                "description": "The contract version of this body. It moves only when a field is removed or renamed or a value changes meaning."
               },
               "contractNote": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "description": "What the contract version promises, as a sentence."
               },
               "contractOmissions": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "minItems": 1
+                "minItems": 1,
+                "description": "Fields this contract deliberately does not carry, each with the reason, so a reader does not look for them."
               },
               "deprecation": {
-                "type": "string"
+                "type": "string",
+                "description": "A notice when a field or this contract version is being retired; an empty string when nothing is."
               },
               "contractSchema": {
                 "type": "string",
-                "pattern": "^https://trooth\\.co/schemas/network-profile\\.v[0-9]+\\.schema\\.json$"
+                "pattern": "^https://trooth\\.co/schemas/network-profile\\.v[0-9]+\\.schema\\.json$",
+                "description": "The URL of this schema."
               },
               "sectionCapabilities": {
                 "type": "string",
@@ -168,57 +184,71 @@
               },
               "slug": {
                 "type": "string",
-                "pattern": "^[a-z0-9][a-z0-9-]*$"
+                "pattern": "^[a-z0-9][a-z0-9-]*$",
+                "description": "The company's slug on the Network; send it as q to read the same record."
               },
               "name": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "description": "The company name as published."
               },
               "domain": {
-                "$ref": "#/$defs/nullableString"
+                "$ref": "#/$defs/nullableString",
+                "description": "The company's domain, or null when none is published."
               },
               "canonicalUrl": {
                 "type": "string",
-                "pattern": "^https://trooth\\.co/network/company/[a-z0-9-]+$"
+                "pattern": "^https://trooth\\.co/network/company/[a-z0-9-]+$",
+                "description": "The company's public Trust Profile page, the human-readable form of this record."
               },
               "tagline": {
-                "$ref": "#/$defs/nullableString"
+                "$ref": "#/$defs/nullableString",
+                "description": "The company's one-line description, as the company wrote it, or null."
               },
               "industries": {
                 "type": "array",
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "Industries the company lists for itself."
               },
               "updatedAt": {
-                "$ref": "#/$defs/nullableString"
+                "$ref": "#/$defs/nullableString",
+                "description": "When the company last published a change to this record. An ISO 8601 date-time in UTC, or null when none is recorded."
               },
               "witnessed": {
-                "$ref": "#/$defs/witnessBlock"
+                "$ref": "#/$defs/witnessBlock",
+                "description": "What Trooth itself observed about the public surface. See the witnessBlock definition."
               },
               "witnessStatement": {
-                "$ref": "#/$defs/witnessStatement"
+                "$ref": "#/$defs/witnessStatement",
+                "description": "The one signed object in this response. Absent (the key is not in the body) when the latest reading has no signed statement."
               },
               "witnessEvidenceManifest": {
-                "$ref": "#/$defs/witnessEvidenceManifest"
+                "$ref": "#/$defs/witnessEvidenceManifest",
+                "description": "The evidence manifest the statement binds by digest. Present with a v2 statement."
               },
               "methodology": {
-                "$ref": "#/$defs/methodology"
+                "$ref": "#/$defs/methodology",
+                "description": "How readings are taken and kept, and what they do not cover."
               },
               "facts": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/fact"
-                }
+                },
+                "description": "Every fact in the selected sections, one per field, each with who said it (origin) and, in contract 2, typed provenance (claim) and record metadata (record). Not signed."
               },
               "conflicts": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/conflict"
-                }
+                },
+                "description": "Fields where sources gave different accounts, each account with its origin. Trooth does not choose between them."
               },
               "signing": {
-                "$ref": "#/$defs/signing"
+                "$ref": "#/$defs/signing",
+                "description": "What in this response is signed, and how to check it yourself."
               },
               "requestedContract": {
                 "oneOf": [
@@ -284,10 +314,12 @@
                           ]
                         }
                       }
-                    ]
+                    ],
+                    "description": "The section ids asked for, or the word all."
                   },
                   "recordVersion": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The record version this page was read from. Use it with next to page through one version."
                   },
                   "limit": {
                     "type": "integer",
@@ -296,23 +328,28 @@
                   },
                   "returned": {
                     "type": "integer",
-                    "minimum": 0
+                    "minimum": 0,
+                    "description": "Facts on this page."
                   },
                   "total": {
                     "type": "integer",
-                    "minimum": 0
+                    "minimum": 0,
+                    "description": "Facts in the selected sections."
                   },
                   "truncated": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "True when more facts follow on another page."
                   },
                   "next": {
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "The cursor for the next page, or null when this page is the last."
                   },
                   "note": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "What this page holds, as a sentence."
                   }
                 }
               },
@@ -330,30 +367,38 @@
                 ],
                 "properties": {
                   "current": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The meaning of the freshness status current, as a sentence."
                   },
                   "due": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The meaning of the freshness status due, as a sentence."
                   },
                   "stale": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The meaning of the freshness status stale, as a sentence."
                   },
                   "not_collected": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The meaning of the freshness status not_collected, as a sentence."
                   },
                   "unknown": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The meaning of the freshness status unknown, as a sentence."
                   },
                   "unavailable": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The meaning of the freshness status unavailable, as a sentence."
                   },
                   "disputed": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The meaning of the freshness status disputed, as a sentence."
                   }
                 }
               },
               "profile": {
-                "$ref": "#/$defs/companyRecord"
+                "$ref": "#/$defs/companyRecord",
+                "description": "The complete record in the order of the public page: every section with its state, provenance and meaning."
               }
             },
             "not": {
@@ -395,13 +440,16 @@
                 ],
                 "properties": {
                   "standing": {
-                    "const": "witnessed"
+                    "const": "witnessed",
+                    "description": "The word witnessed: Trooth has a reading of this public surface. It is not a grade and has no degrees."
                   },
                   "lastWitnessed": {
-                    "$ref": "#/$defs/nullableString"
+                    "$ref": "#/$defs/nullableString",
+                    "description": "When the latest reading was taken. An ISO 8601 date-time in UTC, or null when none is recorded."
                   },
                   "firstWitnessedAt": {
-                    "$ref": "#/$defs/nullableString"
+                    "$ref": "#/$defs/nullableString",
+                    "description": "When the first reading of this company was taken. An ISO 8601 date-time in UTC, or null when none is recorded."
                   },
                   "coverage": {
                     "oneOf": [
@@ -417,11 +465,13 @@
                         "properties": {
                           "checksPassed": {
                             "type": "integer",
-                            "minimum": 0
+                            "minimum": 0,
+                            "description": "Checks read whose outcome was as expected. Part of checksRun, not a separate addend."
                           },
                           "checksRun": {
                             "type": "integer",
-                            "minimum": 1
+                            "minimum": 1,
+                            "description": "Checks read in the latest reading."
                           },
                           "source": {
                             "enum": [
@@ -451,7 +501,8 @@
                           }
                         }
                       }
-                    ]
+                    ],
+                    "description": "What the latest reading counted, reported apart and never combined into one number; null when no counts are available."
                   },
                   "continuity": {
                     "type": "object",
@@ -463,20 +514,25 @@
                     ],
                     "properties": {
                       "recordBegan": {
-                        "$ref": "#/$defs/nullableString"
+                        "$ref": "#/$defs/nullableString",
+                        "description": "When the reading series began. An ISO 8601 date-time in UTC, or null when none is recorded."
                       },
                       "unbrokenSince": {
-                        "$ref": "#/$defs/nullableString"
+                        "$ref": "#/$defs/nullableString",
+                        "description": "Since when readings have stayed within the gap tolerance. An ISO 8601 date-time in UTC, or null when none is recorded."
                       },
                       "unbrokenReadings": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "description": "Readings in the current unbroken series."
                       },
                       "totalReadings": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "description": "Readings kept in the retention window."
                       }
-                    }
+                    },
+                    "description": "How long readings have run without a gap longer than methodology.gapTolerance."
                   }
                 }
               },
@@ -491,19 +547,24 @@
                 ],
                 "properties": {
                   "standing": {
-                    "type": "null"
+                    "type": "null",
+                    "description": "Null: no reading was returned. That is not a finding about the company."
                   },
                   "lastWitnessed": {
-                    "type": "null"
+                    "type": "null",
+                    "description": "Null when there is no reading."
                   },
                   "firstWitnessedAt": {
-                    "type": "null"
+                    "type": "null",
+                    "description": "Null when there is no reading."
                   },
                   "coverage": {
-                    "type": "null"
+                    "type": "null",
+                    "description": "Null when there is no reading."
                   },
                   "continuity": {
-                    "type": "null"
+                    "type": "null",
+                    "description": "Null when there is no reading."
                   }
                 }
               }
@@ -536,7 +597,8 @@
                 "description": "The `kid` of the signing key at https://api.trooth.co/public/keys."
               },
               "alg": {
-                "const": "Ed25519"
+                "const": "Ed25519",
+                "description": "The signature algorithm: Ed25519 (RFC 8032)."
               },
               "canonicalization": {
                 "type": "string",
@@ -559,11 +621,13 @@
                   "properties": {
                     "check_id": {
                       "type": "string",
-                      "minLength": 1
+                      "minLength": 1,
+                      "description": "The check id in the mapping the statement names. Unique in the manifest."
                     },
                     "source": {
                       "type": "string",
-                      "minLength": 1
+                      "minLength": 1,
+                      "description": "The public URL the check read."
                     }
                   }
                 },
@@ -576,11 +640,13 @@
                   "properties": {
                     "check_id": {
                       "type": "string",
-                      "minLength": 1
+                      "minLength": 1,
+                      "description": "The check id in the mapping the statement names. Unique in the manifest."
                     },
                     "commitment": {
                       "type": "string",
-                      "pattern": "^sha256:[0-9a-f]{64}$"
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "description": "sha256 over a secret salt, one 0x0a byte and the private reference; only the company holding it can open it."
                     }
                   }
                 }
@@ -600,13 +666,16 @@
             ],
             "properties": {
               "cadence": {
-                "type": "string"
+                "type": "string",
+                "description": "How often readings are attempted, as a sentence."
               },
               "gapTolerance": {
-                "type": "string"
+                "type": "string",
+                "description": "The longest gap between readings that still counts as unbroken, as a sentence."
               },
               "retention": {
-                "type": "string"
+                "type": "string",
+                "description": "How long readings are kept, as a sentence."
               },
               "freshness": {
                 "type": "array",
@@ -619,26 +688,32 @@
                   ],
                   "properties": {
                     "category": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The fact category id."
                     },
                     "label": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The category as words."
                     },
                     "window": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "How long an observation in this category stays current, as words (for example 48 hours)."
                     }
                   }
-                }
+                },
+                "description": "For each category of fact, how long an observation stays current."
               },
               "exclusions": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "minItems": 1
+                "minItems": 1,
+                "description": "What the readings do not cover, one sentence each."
               },
               "summary": {
-                "type": "string"
+                "type": "string",
+                "description": "The methodology in one paragraph, for a reader restating witnessed elsewhere."
               }
             }
           },
@@ -662,19 +737,24 @@
             "properties": {
               "key": {
                 "type": "string",
-                "pattern": "^[a-z0-9-]+\\.[a-z0-9-]+$"
+                "pattern": "^[a-z0-9-]+\\.[a-z0-9-]+$",
+                "description": "The stable field key, section.field (for example identity.legal-name)."
               },
               "category": {
-                "type": "string"
+                "type": "string",
+                "description": "The section the fact belongs to, as words."
               },
               "label": {
-                "type": "string"
+                "type": "string",
+                "description": "The field name, as words."
               },
               "value": {
-                "type": "string"
+                "type": "string",
+                "description": "The value as published, as text."
               },
               "origin": {
-                "$ref": "#/$defs/origin"
+                "$ref": "#/$defs/origin",
+                "description": "Who said it: company-declared, witnessed or public-source."
               },
               "contested": {
                 "type": "boolean",
@@ -693,7 +773,8 @@
                 ],
                 "properties": {
                   "claimId": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The claim id: the domain, a # and the field key. Stable across record versions."
                   },
                   "subject": {
                     "type": "object",
@@ -703,19 +784,23 @@
                     ],
                     "properties": {
                       "domain": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "The company domain the claim is about."
                       },
                       "scope": {
-                        "const": "company"
+                        "const": "company",
+                        "description": "Always company: the claim is about the company as a whole."
                       }
-                    }
+                    },
+                    "description": "What the claim is about."
                   },
                   "evidenceClass": {
                     "enum": [
                       "company_declaration",
                       "trooth_observation",
                       "public_record"
-                    ]
+                    ],
+                    "description": "company_declaration: the company said it. trooth_observation: Trooth read it from the public surface. public_record: a named outside source."
                   },
                   "declaredAt": {
                     "oneOf": [
@@ -736,7 +821,8 @@
                       {
                         "type": "string"
                       }
-                    ]
+                    ],
+                    "description": "When Trooth or a public source observed the value, or null. An ISO 8601 date-time in UTC, or null when none is recorded."
                   },
                   "validUntil": {
                     "oneOf": [
@@ -746,7 +832,8 @@
                       {
                         "type": "string"
                       }
-                    ]
+                    ],
+                    "description": "When the claim stops applying, when the source states it; otherwise null."
                   },
                   "evidenceRef": {
                     "oneOf": [
@@ -760,7 +847,8 @@
                     "description": "The reference a declared fact cites, as the company gave it, or null. Trooth has not opened it."
                   },
                   "signed": {
-                    "const": false
+                    "const": false,
+                    "description": "Always false: a fact is not signed by anyone. The one signed object is witnessStatement."
                   },
                   "issuerAuthenticated": {
                     "type": "boolean",
@@ -770,7 +858,8 @@
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Names of claim fields Trooth does not know for this fact; they are listed rather than guessed."
                   },
                   "declaredBy": {
                     "description": "Additive (2026-10-04). Present only when declaredAt is set: the actor class and workspace role of the session that published the value. Absent otherwise. Carries no personal data.",
@@ -784,7 +873,8 @@
                         "enum": [
                           "person",
                           "agent"
-                        ]
+                        ],
+                        "description": "person or agent: what kind of signed-in actor published the value."
                       },
                       "role": {
                         "enum": [
@@ -792,7 +882,8 @@
                           "admin",
                           "editor",
                           "unknown"
-                        ]
+                        ],
+                        "description": "The publisher's role in the company workspace: owner, admin, editor, or unknown."
                       }
                     }
                   }
@@ -819,7 +910,8 @@
                 ],
                 "properties": {
                   "companyId": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The company's id on the Network (its slug)."
                   },
                   "canonicalDomain": {
                     "oneOf": [
@@ -829,7 +921,8 @@
                       {
                         "type": "string"
                       }
-                    ]
+                    ],
+                    "description": "The company's domain, or null."
                   },
                   "recordVersion": {
                     "oneOf": [
@@ -839,17 +932,20 @@
                       {
                         "type": "string"
                       }
-                    ]
+                    ],
+                    "description": "The record version this fact was read from, or null."
                   },
                   "factId": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The fact id; equals claim.claimId."
                   },
                   "provenanceKind": {
                     "enum": [
                       "company_declaration",
                       "trooth_observation",
                       "public_record"
-                    ]
+                    ],
+                    "description": "The same value as claim.evidenceClass."
                   },
                   "issuer": {
                     "type": "object",
@@ -863,7 +959,8 @@
                           "company",
                           "trooth",
                           "public_source"
-                        ]
+                        ],
+                        "description": "company, trooth or public_source."
                       },
                       "name": {
                         "oneOf": [
@@ -873,12 +970,15 @@
                           {
                             "type": "string"
                           }
-                        ]
+                        ],
+                        "description": "The issuer name, or null."
                       }
-                    }
+                    },
+                    "description": "Who issued the value."
                   },
                   "sourceReference": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Where the value can be read: the profile page for a declaration, the source for a public record."
                   },
                   "observedAt": {
                     "oneOf": [
@@ -888,7 +988,8 @@
                       {
                         "type": "string"
                       }
-                    ]
+                    ],
+                    "description": "The same value as claim.observedAt."
                   },
                   "attestedAt": {
                     "oneOf": [
@@ -902,7 +1003,8 @@
                     "description": "The same value as claim.declaredAt."
                   },
                   "collectedAt": {
-                    "type": "null"
+                    "type": "null",
+                    "description": "Always null: the record keeps when a version was published, not when each field entered it."
                   },
                   "evidenceReference": {
                     "oneOf": [
@@ -916,7 +1018,8 @@
                     "description": "The same value as claim.evidenceRef."
                   },
                   "methodVersion": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The version of the method that produced this record entry."
                   },
                   "freshness": {
                     "type": "object",
@@ -938,14 +1041,16 @@
                           "unknown",
                           "unavailable",
                           "disputed"
-                        ]
+                        ],
+                        "description": "One of the statuses explained in factFreshnessStatuses."
                       },
                       "collection": {
                         "enum": [
                           "declared_by_company",
                           "read_by_trooth",
                           "public_source"
-                        ]
+                        ],
+                        "description": "How the value arrives: declared_by_company, read_by_trooth or public_source."
                       },
                       "lastObservedAt": {
                         "oneOf": [
@@ -955,7 +1060,8 @@
                           {
                             "type": "string"
                           }
-                        ]
+                        ],
+                        "description": "The last dated observation, or null. An ISO 8601 date-time in UTC, or null when none is recorded."
                       },
                       "windowDays": {
                         "oneOf": [
@@ -966,7 +1072,8 @@
                             "type": "integer",
                             "minimum": 0
                           }
-                        ]
+                        ],
+                        "description": "The freshness window in days, or null when the value has none."
                       },
                       "windowCategory": {
                         "oneOf": [
@@ -976,7 +1083,8 @@
                           {
                             "type": "string"
                           }
-                        ]
+                        ],
+                        "description": "The methodology.freshness category that sets the window, or null."
                       },
                       "nextExpectedRefresh": {
                         "oneOf": [
@@ -986,15 +1094,18 @@
                           {
                             "type": "string"
                           }
-                        ]
+                        ],
+                        "description": "When a fresh observation is next expected, or null."
                       }
-                    }
+                    },
+                    "description": "Whether the value is inside its category freshness window."
                   },
                   "unknown": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Record fields Trooth does not know for this fact, each with the reason."
                   }
                 }
               }
@@ -1010,13 +1121,16 @@
             ],
             "properties": {
               "key": {
-                "type": "string"
+                "type": "string",
+                "description": "The field key the accounts disagree on."
               },
               "category": {
-                "type": "string"
+                "type": "string",
+                "description": "The section, as words."
               },
               "label": {
-                "type": "string"
+                "type": "string",
+                "description": "The field name, as words."
               },
               "accounts": {
                 "type": "array",
@@ -1029,13 +1143,16 @@
                   ],
                   "properties": {
                     "origin": {
-                      "$ref": "#/$defs/origin"
+                      "$ref": "#/$defs/origin",
+                      "description": "Who gave this account."
                     },
                     "value": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The account, as text."
                     }
                   }
-                }
+                },
+                "description": "Each account, with who gave it. Listed in a fixed order that is not a ranking."
               }
             }
           },
@@ -1049,7 +1166,8 @@
             ],
             "properties": {
               "profileSigned": {
-                "const": false
+                "const": false,
+                "description": "Always false: this response as a whole is not signed."
               },
               "signedArtifact": {
                 "oneOf": [
@@ -1059,7 +1177,8 @@
                   {
                     "const": "witnessStatement"
                   }
-                ]
+                ],
+                "description": "The name of the one signed field, witnessStatement, or null when there is no statement."
               },
               "artifactType": {
                 "type": "string",
@@ -1070,7 +1189,8 @@
                 "description": "The signed statement's own type tag. With no statement, trooth.witness-statement.v1."
               },
               "subject": {
-                "type": "string"
+                "type": "string",
+                "description": "What the signed statement covers and does not cover, as a sentence."
               },
               "binding": {
                 "description": "What the statement binds (additive, 2026-10-04). null when there is no statement. `status` is `present` for v2 and `absent` for v1, whose assurance is narrower: v1 binds no mapping, evaluator version, scope or sources, and its digests here are null rather than filled in. This block is read from the payload; it is not a check of the signature or of the binding.",
@@ -1089,28 +1209,36 @@
                         "enum": [
                           "present",
                           "absent"
-                        ]
+                        ],
+                        "description": "present for a v2 statement, which binds the items below; absent for v1."
                       },
                       "mappingVersion": {
-                        "$ref": "#/$defs/nullableString"
+                        "$ref": "#/$defs/nullableString",
+                        "description": "The check mapping version the statement binds, or null."
                       },
                       "mappingUrl": {
-                        "$ref": "#/$defs/nullableString"
+                        "$ref": "#/$defs/nullableString",
+                        "description": "Where the exact mapping bytes are served, or null."
                       },
                       "mappingDigest": {
-                        "$ref": "#/$defs/nullableString"
+                        "$ref": "#/$defs/nullableString",
+                        "description": "sha256: plus the hex SHA-256 of those exact bytes, or null."
                       },
                       "evaluatorVersion": {
-                        "$ref": "#/$defs/nullableString"
+                        "$ref": "#/$defs/nullableString",
+                        "description": "The evaluator version the statement binds, or null."
                       },
                       "evidenceManifestDigest": {
-                        "$ref": "#/$defs/nullableString"
+                        "$ref": "#/$defs/nullableString",
+                        "description": "The digest of the evidence manifest the statement binds, or null."
                       },
                       "assurance": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "What the binding shows and does not show, as a sentence."
                       },
                       "mappingVersions": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "The index of every published mapping version."
                       }
                     }
                   }
@@ -1124,10 +1252,12 @@
                   {
                     "type": "string"
                   }
-                ]
+                ],
+                "description": "The kid of the signing key, or null when there is no statement."
               },
               "keyPurpose": {
-                "type": "string"
+                "type": "string",
+                "description": "What the signing key signs, as a sentence."
               },
               "observedAt": {
                 "oneOf": [
@@ -1137,19 +1267,24 @@
                   {
                     "type": "string"
                   }
-                ]
+                ],
+                "description": "The time the statement carries, or null. An ISO 8601 date-time in UTC, or null when none is recorded."
               },
               "timeSource": {
-                "type": "string"
+                "type": "string",
+                "description": "Where that time comes from. Trooth asserts it when signing; there is no external timestamp."
               },
               "verify": {
-                "type": "string"
+                "type": "string",
+                "description": "How to check the statement yourself."
               },
               "keys": {
-                "type": "string"
+                "type": "string",
+                "description": "The published key list."
               },
               "keyPolicy": {
-                "type": "string"
+                "type": "string",
+                "description": "The key lifecycle policy page."
               }
             }
           },
@@ -1161,10 +1296,12 @@
             ],
             "properties": {
               "label": {
-                "type": "string"
+                "type": "string",
+                "description": "The field name, as words."
               },
               "value": {
-                "type": "string"
+                "type": "string",
+                "description": "The value as published, as text."
               }
             },
             "additionalProperties": false
@@ -1189,25 +1326,29 @@
             ],
             "properties": {
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "The item title."
               },
               "fields": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/recordField"
-                }
+                },
+                "description": "The item fields, label and value."
               },
               "notes": {
                 "type": "array",
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "Notes the record attaches to the item."
               },
               "links": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/recordField"
-                }
+                },
+                "description": "Links the item carries, label and value."
               },
               "data": {
                 "type": "object",
@@ -1227,28 +1368,33 @@
             ],
             "properties": {
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "The group title, as on the page."
               },
               "provenance": {
-                "$ref": "#/$defs/recordProvenance"
+                "$ref": "#/$defs/recordProvenance",
+                "description": "Who said what is in this group."
               },
               "fields": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/recordField"
-                }
+                },
+                "description": "Fields of the group, label and value."
               },
               "items": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/recordItem"
-                }
+                },
+                "description": "Repeated items in the group (for example one per product)."
               },
               "notes": {
                 "type": "array",
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "Notes the record attaches to the group."
               }
             },
             "additionalProperties": false
@@ -1268,13 +1414,16 @@
             ],
             "properties": {
               "id": {
-                "type": "string"
+                "type": "string",
+                "description": "The section id (for example overview, security). Usable in ?sections=."
               },
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "The section title, as on the page."
               },
               "url": {
-                "type": "string"
+                "type": "string",
+                "description": "The page that shows the section."
               },
               "state": {
                 "enum": [
@@ -1287,7 +1436,8 @@
                 "description": "published: the company shows content here. not_published: the section is shown but empty; say it is not published, never fill it. hidden_by_company: the company chose not to show it; no values are carried. unavailable: Trooth could not read this part on this load; it is not empty. request_only: the content exists behind a request and is never carried."
               },
               "provenance": {
-                "$ref": "#/$defs/recordProvenance"
+                "$ref": "#/$defs/recordProvenance",
+                "description": "Who said what is in this section."
               },
               "meaning": {
                 "type": "string",
@@ -1297,19 +1447,22 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/recordField"
-                }
+                },
+                "description": "Fields of the section, label and value."
               },
               "groups": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/recordGroup"
-                }
+                },
+                "description": "Groups within the section."
               },
               "notes": {
                 "type": "array",
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "Notes the record attaches to the section."
               }
             },
             "additionalProperties": false
@@ -1330,22 +1483,28 @@
             ],
             "properties": {
               "format": {
-                "const": "trooth.company-profile.v1"
+                "const": "trooth.company-profile.v1",
+                "description": "The record format."
               },
               "name": {
-                "type": "string"
+                "type": "string",
+                "description": "The company name as published."
               },
               "canonicalUrl": {
-                "type": "string"
+                "type": "string",
+                "description": "The company's public Trust Profile page."
               },
               "markdownUrl": {
-                "type": "string"
+                "type": "string",
+                "description": "The same record as Markdown."
               },
               "updatedAt": {
-                "$ref": "#/$defs/nullableString"
+                "$ref": "#/$defs/nullableString",
+                "description": "When the company last published a change. An ISO 8601 date-time in UTC, or null when none is recorded."
               },
               "howToRead": {
-                "type": "string"
+                "type": "string",
+                "description": "How to read and cite this record, as a paragraph."
               },
               "completeness": {
                 "type": "object",
@@ -1360,40 +1519,47 @@
                 "properties": {
                   "sections": {
                     "type": "integer",
-                    "minimum": 0
+                    "minimum": 0,
+                    "description": "The number of sections in the record."
                   },
                   "published": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Ids of sections with content."
                   },
                   "notPublished": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Ids of sections shown but empty."
                   },
                   "hiddenByCompany": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Ids of sections the company chose to hide."
                   },
                   "unavailable": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Ids of sections that could not be read just now."
                   },
                   "requestOnly": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Ids of sections shared on request only."
                   }
                 },
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "Which sections hold content and which do not, by state. A list, not a percentage."
               },
               "header": {
                 "type": "object",
@@ -1407,22 +1573,27 @@
                 ],
                 "properties": {
                   "name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The company name."
                   },
                   "tagline": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The tagline, or an empty string."
                   },
                   "website": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The company website, or an empty string."
                   },
                   "logoUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The logo URL, or an empty string."
                   },
                   "links": {
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/recordField"
-                    }
+                    },
+                    "description": "Links the company lists, label and value."
                   },
                   "callToAction": {
                     "oneOf": [
@@ -1432,16 +1603,19 @@
                       {
                         "$ref": "#/$defs/recordField"
                       }
-                    ]
+                    ],
+                    "description": "The call to action the page shows, or null."
                   }
                 },
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "The page header: name, tagline, website, logo and links."
               },
               "sections": {
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/recordSection"
-                }
+                },
+                "description": "Every section in page order."
               }
             },
             "additionalProperties": false
