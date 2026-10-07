@@ -267,13 +267,88 @@
               },
               "authority": {
                 "type": "object",
-                "description": "Domain control, registry match, representative authority and publication permission, each stated separately. Additive in contract 2 (2026-09-26).",
+                "description": "Domain control, registry match, representative authority and publication permission, each stated separately, and Trooth's own record of the domain claim in claim. Additive in contract 2 (2026-09-26); claim added 2026-10-07.",
                 "required": [
                   "domainControl",
                   "registryMatch",
                   "representativeAuthority",
                   "publicationPermission"
-                ]
+                ],
+                "properties": {
+                  "claim": {
+                    "type": "object",
+                    "description": "Trooth's own record of the domain claim for the workspace that published this profile, as Trooth recorded it at claim time. Every field is null when nothing is recorded or the record could not be read. It shows control of the domain at claim time; it does not establish the legal entity or that a person may act for it. Absent on responses served before 2026-10-07.",
+                    "required": [
+                      "method",
+                      "confirmed_at",
+                      "representative"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "method": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "dns_txt",
+                          "domain_email_code",
+                          "identity_provider_sign_in",
+                          null
+                        ],
+                        "description": "The proof that confirmed control of the domain: dns_txt (Trooth's challenge TXT record at _trooth-challenge.<domain>), domain_email_code (a code sent to a mailbox at the domain) or identity_provider_sign_in (a sign-in through the company's identity provider at the domain). Null when no proof is recorded."
+                      },
+                      "confirmed_at": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "When Trooth recorded the confirmation (ISO 8601), or null."
+                      },
+                      "representative": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "attested_at",
+                              "method"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^trooth:person:[0-9a-f]{16}$",
+                                "description": "An opaque id for the person who attested at claim time that they may act for the company: the first 16 hex characters of SHA-256 over a fixed label, the owner account id and the domain. It holds no personal data and is stable for this claim."
+                              },
+                              "attested_at": {
+                                "type": "string",
+                                "description": "When the person made the attestation (ISO 8601)."
+                              },
+                              "method": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "enum": [
+                                  "dns_txt",
+                                  "domain_email_code",
+                                  "identity_provider_sign_in",
+                                  null
+                                ],
+                                "description": "The proof that person completed for this claim, in the same words as claim.method."
+                              }
+                            }
+                          }
+                        ],
+                        "description": "The person who attested at claim time that they may act for the company, or null when no attestation is recorded. An attestation is the person's own statement; Trooth does not collect evidence of corporate authority."
+                      }
+                    }
+                  }
+                }
               },
               "relationships": {
                 "type": "object",
