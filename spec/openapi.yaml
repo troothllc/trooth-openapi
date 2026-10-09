@@ -4,25 +4,37 @@
 # is a separate document, https://trooth.co/openapi.json. Every path below has a
 # handler at api.trooth.co, and every schema describes the body that host sends.
 #
-# Two wire names are kept exactly as sent even though they carry a retired
-# product name: one response header name, and the value of the poweredBy field.
-# A contract that renamed a wire name would be wrong for every reader that
-# matches on it, so the header is spelled as sent and poweredBy is described as
-# the opaque constant it is.
+# One wire value is kept exactly as sent even though it carries a retired
+# product name: the value of the poweredBy field, described as the opaque
+# constant it is. The disclaimer header is spelled as api.trooth.co sends it,
+# X-Trooth-Disclaimer (read from the wire 2026-10-09).
 openapi: 3.1.0
 info:
   title: Trooth Network API
-  version: "1.0"
-  # Pre-launch. One public contract, versioned 1.0, released on the date below.
-  x-released: "2026-08-22"
+  version: "1.1"
+  # 1.1 (2026-10-09) is additive: /public/keys and the badge image are
+  # described, the DPoP security scheme and its 401 challenge are declared,
+  # the profile read's 400 is declared, and the disclaimer header is spelled
+  # as sent. 1.0 was released on 2026-08-22.
+  x-released: "2026-10-09"
   summary: >-
     The public API of the Trooth Network, which is Trooth's only product and is
     free. DNS says where a company is; Trooth says who it is.
   description: |
-    The public contract for api.trooth.co. Public reads need no key.
-    Authenticated reads use a Bearer token, which is either a session token or a
-    tenant API key beginning with `tk_`, created from the workspace and
-    revocable there.
+    The public contract for api.trooth.co. Public reads need no key, and are
+    readable from a browser on any site: they carry
+    `Access-Control-Allow-Origin: *` and no credentials are sent or honored.
+
+    Authenticated operations take a sender-constrained credential (DPoP,
+    RFC 9449), as https://trooth.co/docs/api#authorization describes: a
+    workspace API key created with `dpop_jkt`, or a scoped token (`st_`), sent
+    as `Authorization: DPoP <token>` with a fresh proof in the `DPoP` header
+    on every request. A copy of the credential alone is refused, and so is a
+    bound key sent as a plain bearer. A key created without `dpop_jkt` is an
+    ingest key, a bearer credential that reaches only POST
+    /v1/evidence/webhook, which this document does not publish. A refused
+    credential answers 401 with a `WWW-Authenticate: DPoP` challenge naming
+    the error: `dpop_required`, `invalid_dpop_proof` or `invalid_token`.
 
     This document lists only routes that exist. It is deliberately smaller than
     the API: session-scoped workspace routes, authentication flows and
@@ -36,13 +48,11 @@ info:
     from a named source, on a stated date - and not an attestation. Consumers
     confirm independently.
 
-    Every response carries `X-Trooth-OS-Disclaimer` and `X-Trooth-Automation`
+    Every response carries `X-Trooth-Disclaimer` and `X-Trooth-Automation`
     headers, and the public Trust Profile carries `disclaimer` and
-    `disclaimer_url` in its body. The first of those header names carries a
-    product name this business retired. It is spelled exactly as the worker
-    sends it, because a contract that renames a wire header breaks the reader
-    matching on it; the rename belongs in the worker, and is reported there
-    rather than hidden behind a description that disagrees with the wire.
+    `disclaimer_url` in its body. Header names are spelled exactly as the
+    worker sends them, because a contract that disagrees with a wire header
+    breaks the reader matching on it.
   contact: { name: Trooth, url: https://trooth.co, email: hello@trooth.co }
   license: { name: Terms of Service, url: https://trooth.co/terms }
 
@@ -58,6 +68,8 @@ servers:
 tags:
   - name: Public profile
     description: The public record of one company, readable with no key.
+  - name: Signing keys
+    description: The keys Trooth signs with, and the lifecycle of each, readable with no key.
   - name: Questionnaire drafts
     description: Draft answers to an inbound security questionnaire, each drawn from the company's own witnessed evidence.
   - name: Buyer intent
@@ -83,7 +95,9 @@ paths:
         unknown.
 
         This is the canonical schema for this route. No rate limit is applied
-        to it.
+        to it. An identifier outside the slug pattern (for example `..` or
+        `bad_slug!`) is refused with 400 `invalid_input` before anything is
+        looked up.
 
         A company that has published a canonical profile on the Trooth Network
         has exactly one profile there, and this route answers 404 with that
@@ -97,7 +111,14 @@ paths:
       responses:
         "200":
           description: The published Trust Profile.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            X-Trooth-Disclaimer: { $ref: '#/components/headers/XTroothDisclaimer' }
+            X-Trooth-Automation: { $ref: '#/components/headers/XTroothAutomation' }
           content: { application/json: { schema: { $ref: '#/components/schemas/PublicTrustProfile' } } }
+        "400":
+          description: The identifier is not a domain or a Trooth slug. Nothing was looked up.
+          content: { application/json: { schema: { $ref: '#/components/schemas/InvalidSlug' } } }
         "404":
           description: |
             No published profile at this identifier. Three distinct answers share
@@ -111,6 +132,59 @@ paths:
                 oneOf:
                   - { $ref: '#/components/schemas/UnpublishedProfile' }
                   - { $ref: '#/components/schemas/MovedToCanonical' }
+        "500": { $ref: '#/components/responses/ServerError' }
+
+  /public/trust/{slug}/badge.svg:
+    get:
+      tags: [Public profile]
+      operationId: getTrustBadgeImage
+      summary: Get a company's badge image
+      description: |
+        The badge as an SVG image, for an `<img>` tag or a README. No key. It
+        always answers 200 with an image: a company the Network holds no
+        published record for gets a badge that says so, never an error page in
+        place of the picture. The badge states what Trooth witnessed and when;
+        it is not a grade and not a certification. Cached for 300 seconds.
+        The pinned badge release and the script loader are described at
+        https://trooth.co/docs/trust-badge.
+      security: []
+      parameters: [{ $ref: '#/components/parameters/badgeSlug' }]
+      responses:
+        "200":
+          description: The badge image.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Cache-Control: { description: "public, max-age=300", schema: { type: string } }
+          content:
+            image/svg+xml:
+              schema: { contentMediaType: image/svg+xml, description: "The SVG document's text. No JSON body is sent." }
+
+  # ---------------- Signing keys (no key) ----------------
+  /public/keys:
+    get:
+      tags: [Signing keys]
+      operationId: listPublicKeys
+      summary: List Trooth's public signing keys
+      description: |
+        Every Ed25519 key Trooth signs with, current and past, with each key's
+        lifecycle (active, retired, revoked or compromised) and the policy for
+        relying on a signature. No key. Save the list with the time you read
+        it: a saved copy cannot show a compromise announced later. The body is
+        written to the published JSON Schema
+        https://trooth.co/schemas/key-list.schema.json; fields beyond it
+        (`active_kids`, `revocations`, `policy`, `disclaimer`) are additive.
+        `trooth verify --keys <file>` checks a statement against a saved copy.
+      security: []
+      responses:
+        "200":
+          description: The key list.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            X-Trooth-Disclaimer: { $ref: '#/components/headers/XTroothDisclaimer' }
+            X-Trooth-Automation: { $ref: '#/components/headers/XTroothAutomation' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KeyList' }
         "500": { $ref: '#/components/responses/ServerError' }
 
   # ---------------- Questionnaire drafts ----------------
@@ -127,7 +201,7 @@ paths:
 
         Drafts only. You review and send; Trooth never submits or signs on your
         behalf.
-      security: [{ bearerAuth: [] }]
+      security: [{ dpopAuth: [] }]
       parameters:
         - name: phrase
           in: query
@@ -161,7 +235,7 @@ paths:
         Buyers who submitted interest in your company through POST
         /public/marketplace/intent, newest first, capped at 300. Buyer demand,
         surfaced. You decide what to do with it.
-      security: [{ bearerAuth: [] }]
+      security: [{ dpopAuth: [] }]
       responses:
         "200":
           description: The leads this company has received.
@@ -228,27 +302,270 @@ components:
       name: slug
       in: path
       required: true
-      description: A company id or a company domain, for example `example.com`.
-      schema: { type: string, pattern: "^[a-z0-9](?:[a-z0-9.-]{0,98}[a-z0-9])?$" }
+      description: >-
+        A company domain (`example.com`), a company id, or the slug the
+        workspace hands out (`co-example-com`). Letters, digits, dots and
+        hyphens, starting and ending with a letter or digit, at most 253
+        characters; matched without regard to case. Anything else is refused
+        with 400 `invalid_input`.
+      schema: { type: string, minLength: 1, maxLength: 253, pattern: "^[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$" }
+    badgeSlug:
+      name: slug
+      in: path
+      required: true
+      description: >-
+        The same identifier as the profile read takes (see the slug parameter
+        and its pattern). The badge route refuses nothing: an identifier
+        outside that pattern, or one the Network does not hold, gets the badge
+        for an unlisted company with status 200.
+      schema: { type: string, minLength: 1 }
 
   securitySchemes:
+    dpopAuth:
+      type: http
+      scheme: DPoP
+      description: >-
+        A sender-constrained credential (RFC 9449), per
+        https://trooth.co/docs/api#authorization: a workspace API key
+        (`tk_live_`) created with `dpop_jkt`, the RFC 7638 thumbprint of your
+        public key, or a scoped token (`st_`), which is always bound. Send
+        `Authorization: DPoP <token>` and, on every request, a new proof in the
+        `DPoP` header: a JWS with typ `dpop+jwt`, alg ES256 or EdDSA, your
+        public key in `jwk`, and claims htm, htu, iat, a unique jti and ath
+        (the base64url SHA-256 of the token). A proof is accepted once. A bound
+        credential sent without its proof, or as a plain bearer, is refused
+        with 401 and a `WWW-Authenticate: DPoP` challenge. Keys are stored as a
+        hash only, are shown once, and revoke on the next request.
     bearerAuth:
       type: http
       scheme: bearer
       description: >-
-        A session token, or a tenant API key beginning with `tk_` created from
-        the workspace. Keys are stored as a hash only, are shown once, and
-        revoke immediately. Header: `Authorization: Bearer <token>`.
+        A plain bearer credential. api.trooth.co still accepts one only where
+        no key binding exists: an ingest API key (`tk_live_` created without
+        `dpop_jkt`) at POST /v1/evidence/webhook, which this document does not
+        publish, and an OAuth access token issued without a cnf.jkt binding at
+        the MCP server and the A2A agent. No operation in this document takes
+        it; a bound key sent this way is refused.
 
   responses:
     ServerError:
       description: Unexpected server error. Safe to retry with backoff.
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: internal_error, message: "Something went wrong." } } }
     Unauthorized:
-      description: Missing, expired or invalid Bearer token.
-      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { error: unauthorized, message: "Authentication required." } } }
+      description: >-
+        No credential, or one that is refused: a missing, expired, revoked or
+        unknown token, a bound credential sent without its DPoP proof, or a
+        proof that does not check. The WWW-Authenticate header carries the DPoP
+        challenge and the error code, and the body's `error` repeats it.
+      headers:
+        WWW-Authenticate: { $ref: '#/components/headers/WWWAuthenticate' }
+        Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: dpop_required, message: "This credential is bound to a key; send it with the DPoP scheme and a proof.", docs: "https://trooth.co/docs/api#authorization" }
+
+  headers:
+    WWWAuthenticate:
+      required: true
+      description: >-
+        The DPoP challenge (RFC 9449 section 7.1, RFC 6750 section 3), for
+        example `DPoP algs="ES256 EdDSA", error="invalid_dpop_proof",
+        error_description="The DPoP proof does not decode."`. `error` is
+        `dpop_required` when no proof or no credential was sent, or a bound
+        credential arrived as a plain bearer; `invalid_dpop_proof` when the
+        proof does not check (signature, htm, htu, iat window, ath, or a
+        replayed jti); `invalid_token` when the credential is unknown, expired
+        or revoked.
+      schema: { type: string, pattern: "^DPoP( |$)" }
+    AccessControlAllowOrigin:
+      description: Always `*` on these routes; no credentials are sent or honored.
+      schema: { type: string, const: "*" }
+    XTroothDisclaimer:
+      description: The disclaimer this service attaches to every response, as a short sentence.
+      schema: { type: string }
+    XTroothAutomation:
+      description: What Trooth signs and what it never signs, as a short sentence.
+      schema: { type: string }
 
   schemas:
+    # BEGIN GENERATED KeyList: scripts/gen-openapi.mjs from public/schemas/key-list.schema.json. Do not edit by hand.
+    KeyList: {
+        "title": "KeyList",
+        "description": "The body of https://api.trooth.co/public/keys, or a saved copy of it. Save it with the time you read it: a saved list cannot show a compromise announced later. Canonical JSON Schema: https://trooth.co/schemas/key-list.schema.json; embedded here with its $defs as KeyList_* components.",
+        "type": "object",
+        "required": [
+          "keys"
+        ],
+        "properties": {
+          "keys": {
+            "type": "array",
+            "description": "Every key, current and past.",
+            "items": {
+              "$ref": "#/components/schemas/KeyList_PublicKey"
+            }
+          },
+          "list_read_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the list was read. An ISO 8601 date-time in UTC, as written by Trooth (for example 2026-10-06T20:00:44.820Z)."
+          },
+          "active_kid": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The kid of the key currently used for new statements."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A note from the key service."
+          }
+        }
+      }
+    KeyList_PublicKey: {
+        "title": "PublicKey",
+        "type": "object",
+        "description": "One published key and its lifecycle. Only `kid`, `alg`, `encoding`, `public_key`, `status` and the three lifecycle times decide trust (docs/VERIFY.md section 3).",
+        "required": [
+          "kid",
+          "alg",
+          "public_key",
+          "status"
+        ],
+        "properties": {
+          "kid": {
+            "type": "string",
+            "description": "The key id a statement names in key_id.",
+            "minLength": 1
+          },
+          "alg": {
+            "type": "string",
+            "description": "Always Ed25519.",
+            "const": "Ed25519"
+          },
+          "encoding": {
+            "type": "string",
+            "description": "How public_key is written: hex or base64.",
+            "enum": [
+              "hex",
+              "base64"
+            ]
+          },
+          "public_key": {
+            "type": "string",
+            "description": "The 32-byte Ed25519 public key, in `encoding`.",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "description": "active, retired, revoked or compromised.",
+            "enum": [
+              "active",
+              "retired",
+              "revoked",
+              "compromised"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "description": "The same lifecycle state as written by the key service."
+          },
+          "retired_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the key was retired. Statements carrying a read_at strictly before this stay trusted. An ISO 8601 date-time in UTC, as written by Trooth (for example 2026-10-06T20:00:44.820Z)."
+          },
+          "compromised_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the key was found compromised. Nothing signed by it is relied on. An ISO 8601 date-time in UTC, as written by Trooth (for example 2026-10-06T20:00:44.820Z)."
+          },
+          "revoked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the key was revoked. A revocation with no compromise recorded is treated as a compromise. An ISO 8601 date-time in UTC, as written by Trooth (for example 2026-10-06T20:00:44.820Z)."
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the key was created, when recorded. An ISO 8601 date-time in UTC, as written by Trooth (for example 2026-10-06T20:00:44.820Z)."
+          },
+          "activated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the key was first used, when recorded. An ISO 8601 date-time in UTC, as written by Trooth (for example 2026-10-06T20:00:44.820Z)."
+          },
+          "first_listed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the key first appeared on the list. An ISO 8601 date-time in UTC, as written by Trooth (for example 2026-10-06T20:00:44.820Z)."
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "A short fingerprint of the key, for display."
+          },
+          "purpose": {
+            "type": "string",
+            "description": "What the key is for, as a short label."
+          },
+          "signs": {
+            "type": "string",
+            "description": "What the key signs, in words."
+          },
+          "events": {
+            "type": "array",
+            "description": "Lifecycle events, oldest first.",
+            "items": {
+              "$ref": "#/components/schemas/KeyList_KeyEvent"
+            }
+          }
+        }
+      }
+    KeyList_KeyEvent: {
+        "title": "KeyEvent",
+        "type": "object",
+        "description": "One lifecycle event of a key.",
+        "required": [
+          "event",
+          "at"
+        ],
+        "properties": {
+          "event": {
+            "type": "string",
+            "description": "What happened (for example first_listed, retired, compromised)."
+          },
+          "at": {
+            "type": "string",
+            "description": "When. An ISO 8601 date-time in UTC, as written by Trooth (for example 2026-10-06T20:00:44.820Z)."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A note, or null."
+          }
+        }
+      }
+    # END GENERATED KeyList
     PublicTrustProfile:
       type: object
       required: [profile, pillarSummary, chainEvidence, poweredBy, disclaimer]
@@ -326,6 +643,16 @@ components:
             assessments: { type: integer }
         highlights: { type: array, items: { type: string } }
         hasAi: { type: boolean }
+    InvalidSlug:
+      type: object
+      description: Returned with status 400 when the identifier is not a domain or a Trooth slug.
+      required: [slug, status, error, message]
+      properties:
+        slug: { type: string, description: The identifier as given. }
+        status: { type: string, const: invalid_input }
+        error: { type: string, const: invalid_input }
+        message: { type: string }
+        supported_lookup: { type: string, format: uri, description: "The supported read on trooth.co for the same identifier." }
     UnpublishedProfile:
       type: object
       description: Returned with status 404 when the Network holds no readable profile at this identifier.
@@ -336,6 +663,7 @@ components:
         measured: { type: boolean, description: "False when unclaimed, true when claimed but withheld." }
         provenance: { type: string, enum: [honest_absence, withheld_by_owner] }
         message: { type: string }
+        supported_lookup: { type: string, format: uri, description: "The supported read on trooth.co, GET /api/network/profile, for the same identifier." }
         claim:
           type: object
           properties:
@@ -353,9 +681,12 @@ components:
       description: Returned with status 404 when the company has one canonical profile on the Trooth Network.
       required: [error, message, canonicalUrl]
       properties:
+        slug: { type: string, description: The identifier as given. }
+        status: { type: string, const: moved }
         error: { type: string, const: moved }
         message: { type: string }
         canonicalUrl: { type: string, format: uri }
+        supported_lookup: { type: string, format: uri, description: "The supported read on trooth.co, GET /api/network/profile, for the same identifier." }
     QuestionnaireRequest:
       type: object
       required: [questions]
@@ -477,5 +808,6 @@ components:
       type: object
       required: [error]
       properties:
-        error: { type: string, enum: [unauthorized, questions_required, moved, internal_error, bad_json, bad_request] }
+        error: { type: string, enum: [unauthorized, dpop_required, invalid_dpop_proof, invalid_token, questions_required, moved, invalid_input, internal_error, bad_json, bad_request] }
         message: { type: string }
+        docs: { type: string, format: uri, description: "Where the error is explained, when the service names a page." }
