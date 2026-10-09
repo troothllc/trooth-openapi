@@ -4,7 +4,7 @@
     "title": "Trooth Public API",
     "version": "1.1.0",
     "summary": "The read-only public surface of the Trooth Network.",
-    "description": "Everything here answers a question about a software or AI company from published\nevidence, and needs no credential. It is the surface a person, an integrator or an\nauthorized agent may build on.\n\nWHAT IS DELIBERATELY ABSENT. Authentication flows are not documented: they are\nbrowser redirects in a login sequence, not an API. Unauthenticated endpoints that\nsend mail or start work are rate limited and undocumented on purpose. Every\nsession-authenticated endpoint is absent because publishing an internal route map\nhelps an attacker and promises an API that is not offered.\n\nEVIDENCE VOCABULARY. Responses distinguish witnessed, public record (wire value\n`verified`), declared, inferred, unknown, not applicable, restricted, unavailable,\nstale and conflicting. Unknown is an answer, never a blank\nfilled in, and stale is never the same as wrong. No response carries a figure, a\nrank or a grade for a company: the witness facts are coverage (checks that read as\nexpected, out of checks run), freshness (last read), continuity (unbroken since) and change.\n\nA 404 from these endpoints usually means the Network holds no record, which is an\nanswer rather than a failure.\n\nTHE OTHER HOST. These are the routes trooth.co serves. api.trooth.co is a separate\nservice with its own contract, https://trooth.co/openapi.yaml, and that document is\nthe canonical schema for GET https://api.trooth.co/public/trust/{slug}\n(PublicTrustProfile). The service applies no rate limit to that read. Its MCP server\nat https://api.trooth.co/public/mcp allows 120 tools/call requests a minute per IP\naddress, counted per server instance, and answers 429 with Retry-After: 60 over it.\n\nGenerated from app/api by scripts/gen-openapi.mjs. check:openapi fails the build\nwhen this document and the source disagree.",
+    "description": "Everything here answers a question about a software or AI company from published\nevidence, and needs no credential. It is the surface a person, an integrator or an\nauthorized agent may build on.\n\nWHAT IS DELIBERATELY ABSENT. Authentication flows are not documented: they are\nbrowser redirects in a login sequence, not an API. Unauthenticated endpoints that\nsend mail or start work are rate limited and undocumented on purpose. Every\nsession-authenticated endpoint is absent because publishing an internal route map\nhelps an attacker and promises an API that is not offered.\n\nEVIDENCE VOCABULARY. Responses distinguish witnessed, public record (wire value\n`verified`), declared, inferred, unknown, not applicable, restricted, unavailable,\nstale and conflicting. Unknown is an answer, never a blank\nfilled in, and stale is never the same as wrong. No response carries a figure, a\nrank or a grade for a company: the witness facts are coverage (checks that read as\nexpected, out of checks run), freshness (last read), continuity (unbroken since) and change.\n\nA 404 from these endpoints usually means the Network holds no record, which is an\nanswer rather than a failure.\n\nCROSS-ORIGIN. Every operation here is readable from a browser on any site: responses\ncarry Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so\nno cookie is sent or honored. A browser's OPTIONS check before a request that sends\nthe Trooth-Contract, Trooth-Version or If-None-Match header is answered.\n\nTHE OTHER HOST. These are the routes trooth.co serves. api.trooth.co is a separate\nservice with its own contract, https://trooth.co/openapi.yaml, and that document is\nthe canonical schema for GET https://api.trooth.co/public/trust/{slug}\n(PublicTrustProfile), for GET https://api.trooth.co/public/keys and for the badge\nimage. Its authenticated routes take a DPoP-bound credential (RFC 9449), described\nthere and at https://trooth.co/docs/api#authorization. The service applies no rate\nlimit to the profile read. Its MCP server\nat https://api.trooth.co/public/mcp allows 120 tools/call requests a minute per IP\naddress, counted per server instance, and answers 429 with Retry-After: 60 over it.\n\nGenerated from app/api by scripts/gen-openapi.mjs. check:openapi fails the build\nwhen this document and the source disagree.",
     "contact": {
       "name": "Trooth developer support",
       "email": "developers@trooth.co",
@@ -24,509 +24,286 @@
   "components": {
     "schemas": {
       "NetworkProfileV2": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://trooth.co/schemas/network-profile.v2.schema.json",
         "title": "Trooth Network profile response, contract version 2",
-        "description": "The body GET https://trooth.co/api/network/profile?q=<domain or slug> returns, as JSON Schema. This is the canonical shape: the route is tested against it on every push (tests/public-contract-schema.test.mjs) and the live route is checked against it after every deployment (scripts/verify-public-contract.mjs). The MCP tool trooth_public_trust_profile on api.trooth.co reads this body and writes its answer from it. Additions do not move the contract version and are not refused here; a removal, a rename or a change of meaning moves it, and a new file is published beside this one. What this schema deliberately refuses: any field named rating, rank, grade or confidence, because the contract carries none and a reader must not be able to find one.",
+        "description": "The body GET https://trooth.co/api/network/profile?q=<domain or slug> returns, as JSON Schema. This is the canonical shape: the route is tested against it on every push (tests/public-contract-schema.test.mjs) and the live route is checked against it after every deployment (scripts/verify-public-contract.mjs). The MCP tool trooth_public_trust_profile on api.trooth.co reads this body and writes its answer from it. Additions do not move the contract version and are not refused here; a removal, a rename or a change of meaning moves it, and a new file is published beside this one. What this schema deliberately refuses: any field named rating, rank, grade or confidence, because the contract carries none and a reader must not be able to find one. Canonical JSON Schema: https://trooth.co/schemas/network-profile.v2.schema.json; embedded here with its $defs as NetworkProfileV2_* components.",
         "oneOf": [
           {
-            "$ref": "#/$defs/notFound"
+            "$ref": "#/components/schemas/NetworkProfileV2_notFound"
           },
           {
-            "$ref": "#/$defs/found"
+            "$ref": "#/components/schemas/NetworkProfileV2_found"
           }
+        ]
+      },
+      "NetworkProfileV2_nullableString": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "NetworkProfileV2_notFound": {
+        "type": "object",
+        "description": "No published profile answers this query, or the query was refused. Not an error about the company; the Network does not hold it.",
+        "required": [
+          "found"
         ],
-        "$defs": {
-          "nullableString": {
-            "type": [
-              "string",
-              "null"
-            ]
+        "properties": {
+          "found": {
+            "const": false,
+            "description": "Always false in this branch: no published profile answers the query."
           },
-          "notFound": {
-            "type": "object",
-            "description": "No published profile answers this query, or the query was refused. Not an error about the company; the Network does not hold it.",
-            "required": [
-              "found"
-            ],
-            "properties": {
-              "found": {
-                "const": false,
-                "description": "Always false in this branch: no published profile answers the query."
-              },
-              "error": {
-                "type": "string",
-                "description": "A short machine code for why nothing was returned (for example missing q, rate_limited, unsupported_contract_version, profile_read_unavailable). Absent when the Network simply holds no profile for the query."
-              },
-              "message": {
-                "type": "string",
-                "description": "The same reason as a sentence, when there is one."
-              },
-              "contractVersion": {
-                "type": "integer",
-                "minimum": 1,
-                "description": "The contract version this body follows."
-              },
-              "ambiguous": {
-                "type": "boolean",
-                "description": "True when q is a company name that several published companies carry (REQ-4-1629). No record was chosen; candidates lists what the name could mean. Additive in contract 2 (2026-09-29)."
-              },
-              "candidates": {
-                "type": "array",
-                "description": "Present with ambiguous. Each published company the name could mean, ordered by slug (an order that suggests none), with the exact query that selects it.",
-                "items": {
-                  "type": "object",
-                  "required": [
-                    "slug",
-                    "name",
-                    "domain",
-                    "profileUrl",
-                    "select"
-                  ],
-                  "properties": {
-                    "slug": {
-                      "type": "string",
-                      "description": "The company's slug on the Network."
+          "error": {
+            "type": "string",
+            "description": "A short machine code for why nothing was returned (for example missing q, rate_limited, unsupported_contract_version, profile_read_unavailable). Absent when the Network simply holds no profile for the query."
+          },
+          "message": {
+            "type": "string",
+            "description": "The same reason as a sentence, when there is one."
+          },
+          "contractVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The contract version this body follows."
+          },
+          "ambiguous": {
+            "type": "boolean",
+            "description": "True when q is a company name that several published companies carry (REQ-4-1629). No record was chosen; candidates lists what the name could mean. Additive in contract 2 (2026-09-29)."
+          },
+          "candidates": {
+            "type": "array",
+            "description": "Present with ambiguous. Each published company the name could mean, ordered by slug (an order that suggests none), with the exact query that selects it.",
+            "items": {
+              "type": "object",
+              "required": [
+                "slug",
+                "name",
+                "domain",
+                "profileUrl",
+                "select"
+              ],
+              "properties": {
+                "slug": {
+                  "type": "string",
+                  "description": "The company's slug on the Network."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The company name as published."
+                },
+                "domain": {
+                  "oneOf": [
+                    {
+                      "type": "null"
                     },
-                    "name": {
-                      "type": "string",
-                      "description": "The company name as published."
-                    },
-                    "domain": {
-                      "oneOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ],
-                      "description": "The company's domain, or null when none is published."
-                    },
-                    "profileUrl": {
-                      "type": "string",
-                      "description": "The company's public Trust Profile page."
-                    },
-                    "select": {
-                      "type": "string",
-                      "description": "Send this as q to read this company's record and no other."
+                    {
+                      "type": "string"
                     }
-                  }
+                  ],
+                  "description": "The company's domain, or null when none is published."
+                },
+                "profileUrl": {
+                  "type": "string",
+                  "description": "The company's public Trust Profile page."
+                },
+                "select": {
+                  "type": "string",
+                  "description": "Send this as q to read this company's record and no other."
                 }
-              },
-              "candidatesTotal": {
-                "type": "integer",
-                "minimum": 2,
-                "description": "How many published companies carry the name, when ambiguous."
-              },
-              "candidatesTruncated": {
-                "type": "boolean",
-                "description": "True when candidates lists fewer companies than candidatesTotal."
               }
             }
           },
+          "candidatesTotal": {
+            "type": "integer",
+            "minimum": 2,
+            "description": "How many published companies carry the name, when ambiguous."
+          },
+          "candidatesTruncated": {
+            "type": "boolean",
+            "description": "True when candidates lists fewer companies than candidatesTotal."
+          }
+        }
+      },
+      "NetworkProfileV2_found": {
+        "type": "object",
+        "required": [
+          "found",
+          "contractVersion",
+          "contractNote",
+          "contractOmissions",
+          "deprecation",
+          "slug",
+          "name",
+          "domain",
+          "canonicalUrl",
+          "tagline",
+          "industries",
+          "updatedAt",
+          "witnessed",
+          "methodology",
+          "facts",
+          "conflicts"
+        ],
+        "properties": {
           "found": {
+            "const": true,
+            "description": "Always true in this branch: a published profile answers the query."
+          },
+          "contractVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The contract version of this body. It moves only when a field is removed or renamed or a value changes meaning."
+          },
+          "contractNote": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What the contract version promises, as a sentence."
+          },
+          "contractOmissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "Fields this contract deliberately does not carry, each with the reason, so a reader does not look for them."
+          },
+          "deprecation": {
+            "type": "string",
+            "description": "A notice when a field or this contract version is being retired; an empty string when nothing is."
+          },
+          "contractSchema": {
+            "type": "string",
+            "pattern": "^https://trooth\\.co/schemas/network-profile\\.v[0-9]+\\.schema\\.json$",
+            "description": "The URL of this schema."
+          },
+          "sectionCapabilities": {
+            "type": "string",
+            "const": "https://trooth.co/section-capabilities.json",
+            "description": "The section map: for each section of a company record, whether this full record, the bounded MCP summary, the profile Markdown and the directory entry carry it (supported), leave it out on purpose (omitted), cannot carry it yet (unavailable) or never carry it because it is private (unpublished). Static and free of company data. Absence in a projection is never a negative fact."
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "description": "The company's slug on the Network; send it as q to read the same record."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The company name as published."
+          },
+          "domain": {
+            "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+            "description": "The company's domain, or null when none is published."
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "pattern": "^https://trooth\\.co/network/company/[a-z0-9-]+$",
+            "description": "The company's public Trust Profile page, the human-readable form of this record."
+          },
+          "tagline": {
+            "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+            "description": "The company's one-line description, as the company wrote it, or null."
+          },
+          "industries": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Industries the company lists for itself."
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+            "description": "When the company last published a change to this record. An ISO 8601 date-time in UTC, or null when none is recorded."
+          },
+          "witnessed": {
+            "$ref": "#/components/schemas/NetworkProfileV2_witnessBlock",
+            "description": "What Trooth itself observed about the public surface. See the witnessBlock definition."
+          },
+          "witnessStatement": {
+            "$ref": "#/components/schemas/NetworkProfileV2_witnessStatement",
+            "description": "The one signed object in this response. Absent (the key is not in the body) when the latest reading has no signed statement."
+          },
+          "witnessEvidenceManifest": {
+            "$ref": "#/components/schemas/NetworkProfileV2_witnessEvidenceManifest",
+            "description": "The evidence manifest the statement binds by digest. Present with a v2 statement."
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/NetworkProfileV2_methodology",
+            "description": "How readings are taken and kept, and what they do not cover."
+          },
+          "facts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_fact"
+            },
+            "description": "Every fact in the selected sections, one per field, each with who said it (origin) and, in contract 2, typed provenance (claim) and record metadata (record). Not signed."
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_conflict"
+            },
+            "description": "Fields where sources gave different accounts, each account with its origin. Trooth does not choose between them."
+          },
+          "signing": {
+            "$ref": "#/components/schemas/NetworkProfileV2_signing",
+            "description": "What in this response is signed, and how to check it yourself."
+          },
+          "requestedContract": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The contract the caller asked for with ?contract= or the Trooth-Contract header, or null when it asked for none. contractVersion is the contract that served the response. Additive in contract 2 (2026-09-26)."
+          },
+          "evidenceClasses": {
             "type": "object",
+            "description": "What each evidenceClass value means. Additive in contract 2 (2026-09-26)."
+          },
+          "authority": {
+            "type": "object",
+            "description": "Domain control, registry match, representative authority and publication permission, each stated separately, and Trooth's own record of the domain claim in claim. Additive in contract 2 (2026-09-26); claim added 2026-10-07.",
             "required": [
-              "found",
-              "contractVersion",
-              "contractNote",
-              "contractOmissions",
-              "deprecation",
-              "slug",
-              "name",
-              "domain",
-              "canonicalUrl",
-              "tagline",
-              "industries",
-              "updatedAt",
-              "witnessed",
-              "methodology",
-              "facts",
-              "conflicts"
+              "domainControl",
+              "registryMatch",
+              "representativeAuthority",
+              "publicationPermission"
             ],
             "properties": {
-              "found": {
-                "const": true,
-                "description": "Always true in this branch: a published profile answers the query."
-              },
-              "contractVersion": {
-                "type": "integer",
-                "minimum": 1,
-                "description": "The contract version of this body. It moves only when a field is removed or renamed or a value changes meaning."
-              },
-              "contractNote": {
-                "type": "string",
-                "minLength": 1,
-                "description": "What the contract version promises, as a sentence."
-              },
-              "contractOmissions": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "minItems": 1,
-                "description": "Fields this contract deliberately does not carry, each with the reason, so a reader does not look for them."
-              },
-              "deprecation": {
-                "type": "string",
-                "description": "A notice when a field or this contract version is being retired; an empty string when nothing is."
-              },
-              "contractSchema": {
-                "type": "string",
-                "pattern": "^https://trooth\\.co/schemas/network-profile\\.v[0-9]+\\.schema\\.json$",
-                "description": "The URL of this schema."
-              },
-              "sectionCapabilities": {
-                "type": "string",
-                "const": "https://trooth.co/section-capabilities.json",
-                "description": "The section map: for each section of a company record, whether this full record, the bounded MCP summary, the profile Markdown and the directory entry carry it (supported), leave it out on purpose (omitted), cannot carry it yet (unavailable) or never carry it because it is private (unpublished). Static and free of company data. Absence in a projection is never a negative fact."
-              },
-              "slug": {
-                "type": "string",
-                "pattern": "^[a-z0-9][a-z0-9-]*$",
-                "description": "The company's slug on the Network; send it as q to read the same record."
-              },
-              "name": {
-                "type": "string",
-                "minLength": 1,
-                "description": "The company name as published."
-              },
-              "domain": {
-                "$ref": "#/$defs/nullableString",
-                "description": "The company's domain, or null when none is published."
-              },
-              "canonicalUrl": {
-                "type": "string",
-                "pattern": "^https://trooth\\.co/network/company/[a-z0-9-]+$",
-                "description": "The company's public Trust Profile page, the human-readable form of this record."
-              },
-              "tagline": {
-                "$ref": "#/$defs/nullableString",
-                "description": "The company's one-line description, as the company wrote it, or null."
-              },
-              "industries": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "Industries the company lists for itself."
-              },
-              "updatedAt": {
-                "$ref": "#/$defs/nullableString",
-                "description": "When the company last published a change to this record. An ISO 8601 date-time in UTC, or null when none is recorded."
-              },
-              "witnessed": {
-                "$ref": "#/$defs/witnessBlock",
-                "description": "What Trooth itself observed about the public surface. See the witnessBlock definition."
-              },
-              "witnessStatement": {
-                "$ref": "#/$defs/witnessStatement",
-                "description": "The one signed object in this response. Absent (the key is not in the body) when the latest reading has no signed statement."
-              },
-              "witnessEvidenceManifest": {
-                "$ref": "#/$defs/witnessEvidenceManifest",
-                "description": "The evidence manifest the statement binds by digest. Present with a v2 statement."
-              },
-              "methodology": {
-                "$ref": "#/$defs/methodology",
-                "description": "How readings are taken and kept, and what they do not cover."
-              },
-              "facts": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/fact"
-                },
-                "description": "Every fact in the selected sections, one per field, each with who said it (origin) and, in contract 2, typed provenance (claim) and record metadata (record). Not signed."
-              },
-              "conflicts": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/conflict"
-                },
-                "description": "Fields where sources gave different accounts, each account with its origin. Trooth does not choose between them."
-              },
-              "signing": {
-                "$ref": "#/$defs/signing",
-                "description": "What in this response is signed, and how to check it yourself."
-              },
-              "requestedContract": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "type": "integer"
-                  }
-                ],
-                "description": "The contract the caller asked for with ?contract= or the Trooth-Contract header, or null when it asked for none. contractVersion is the contract that served the response. Additive in contract 2 (2026-09-26)."
-              },
-              "evidenceClasses": {
+              "claim": {
                 "type": "object",
-                "description": "What each evidenceClass value means. Additive in contract 2 (2026-09-26)."
-              },
-              "authority": {
-                "type": "object",
-                "description": "Domain control, registry match, representative authority and publication permission, each stated separately, and Trooth's own record of the domain claim in claim. Additive in contract 2 (2026-09-26); claim added 2026-10-07.",
+                "description": "Trooth's own record of the domain claim for the workspace that published this profile, as Trooth recorded it at claim time. Every field is null when nothing is recorded or the record could not be read. It shows control of the domain at claim time; it does not establish the legal entity or that a person may act for it. Absent on responses served before 2026-10-07.",
                 "required": [
-                  "domainControl",
-                  "registryMatch",
-                  "representativeAuthority",
-                  "publicationPermission"
+                  "method",
+                  "confirmed_at",
+                  "representative"
                 ],
+                "additionalProperties": false,
                 "properties": {
-                  "claim": {
-                    "type": "object",
-                    "description": "Trooth's own record of the domain claim for the workspace that published this profile, as Trooth recorded it at claim time. Every field is null when nothing is recorded or the record could not be read. It shows control of the domain at claim time; it does not establish the legal entity or that a person may act for it. Absent on responses served before 2026-10-07.",
-                    "required": [
-                      "method",
-                      "confirmed_at",
-                      "representative"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "method": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "enum": [
-                          "dns_txt",
-                          "domain_email_code",
-                          "identity_provider_sign_in",
-                          null
-                        ],
-                        "description": "The proof that confirmed control of the domain: dns_txt (Trooth's challenge TXT record at _trooth-challenge.<domain>), domain_email_code (a code sent to a mailbox at the domain) or identity_provider_sign_in (a sign-in through the company's identity provider at the domain). Null when no proof is recorded."
-                      },
-                      "confirmed_at": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
-                        "description": "When Trooth recorded the confirmation (ISO 8601), or null."
-                      },
-                      "representative": {
-                        "oneOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "id",
-                              "attested_at",
-                              "method"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "id": {
-                                "type": "string",
-                                "pattern": "^trooth:person:[0-9a-f]{16}$",
-                                "description": "An opaque id for the person who attested at claim time that they may act for the company: the first 16 hex characters of SHA-256 over a fixed label, the owner account id and the domain. It holds no personal data and is stable for this claim."
-                              },
-                              "attested_at": {
-                                "type": "string",
-                                "description": "When the person made the attestation (ISO 8601)."
-                              },
-                              "method": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ],
-                                "enum": [
-                                  "dns_txt",
-                                  "domain_email_code",
-                                  "identity_provider_sign_in",
-                                  null
-                                ],
-                                "description": "The proof that person completed for this claim, in the same words as claim.method."
-                              }
-                            }
-                          }
-                        ],
-                        "description": "The person who attested at claim time that they may act for the company, or null when no attestation is recorded. An attestation is the person's own statement; Trooth does not collect evidence of corporate authority."
-                      }
-                    }
-                  }
-                }
-              },
-              "relationships": {
-                "type": "object",
-                "description": "What a listed relationship does and does not establish. Additive in contract 2 (2026-09-26)."
-              },
-              "selection": {
-                "type": "object",
-                "description": "Which part of the record this response carries (REQ-4-1630). sections is the list asked for with ?sections=, or \"all\". recordVersion is the profile update time the page belongs to. total is how many facts the selected sections hold, returned how many this page carries, and truncated says whether any were left out; when it is true, next is a cursor to send as ?after= for the rest, refused as stale if the company publishes a new version in between. conflicts carries only the disagreements about facts on this page, and a contested fact stays marked.",
-                "required": [
-                  "sections",
-                  "recordVersion",
-                  "limit",
-                  "returned",
-                  "total",
-                  "truncated",
-                  "next"
-                ],
-                "properties": {
-                  "sections": {
-                    "oneOf": [
-                      {
-                        "const": "all"
-                      },
-                      {
-                        "type": "array",
-                        "items": {
-                          "enum": [
-                            "identity",
-                            "registration",
-                            "hosting",
-                            "pricing",
-                            "pricing-add-ons",
-                            "security",
-                            "privacy",
-                            "privacy-roles",
-                            "recovery",
-                            "ai-practices"
-                          ]
-                        }
-                      }
-                    ],
-                    "description": "The section ids asked for, or the word all."
-                  },
-                  "recordVersion": {
-                    "type": "string",
-                    "description": "The record version this page was read from. Use it with next to page through one version."
-                  },
-                  "limit": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "description": "Facts per page as served, at most 200."
-                  },
-                  "returned": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "description": "Facts on this page."
-                  },
-                  "total": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "description": "Facts in the selected sections."
-                  },
-                  "truncated": {
-                    "type": "boolean",
-                    "description": "True when more facts follow on another page."
-                  },
-                  "next": {
+                  "method": {
                     "type": [
                       "string",
                       "null"
                     ],
-                    "description": "The cursor for the next page, or null when this page is the last."
+                    "enum": [
+                      "dns_txt",
+                      "domain_email_code",
+                      "identity_provider_sign_in",
+                      null
+                    ],
+                    "description": "The proof that confirmed control of the domain: dns_txt (Trooth's challenge TXT record at _trooth-challenge.<domain>), domain_email_code (a code sent to a mailbox at the domain) or identity_provider_sign_in (a sign-in through the company's identity provider at the domain). Null when no proof is recorded."
                   },
-                  "note": {
-                    "type": "string",
-                    "description": "What this page holds, as a sentence."
-                  }
-                }
-              },
-              "factFreshnessStatuses": {
-                "type": "object",
-                "description": "One sentence of meaning for each value of facts[].record.freshness.status.",
-                "required": [
-                  "current",
-                  "due",
-                  "stale",
-                  "not_collected",
-                  "unknown",
-                  "unavailable",
-                  "disputed"
-                ],
-                "properties": {
-                  "current": {
-                    "type": "string",
-                    "description": "The meaning of the freshness status current, as a sentence."
+                  "confirmed_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "When Trooth recorded the confirmation (ISO 8601), or null."
                   },
-                  "due": {
-                    "type": "string",
-                    "description": "The meaning of the freshness status due, as a sentence."
-                  },
-                  "stale": {
-                    "type": "string",
-                    "description": "The meaning of the freshness status stale, as a sentence."
-                  },
-                  "not_collected": {
-                    "type": "string",
-                    "description": "The meaning of the freshness status not_collected, as a sentence."
-                  },
-                  "unknown": {
-                    "type": "string",
-                    "description": "The meaning of the freshness status unknown, as a sentence."
-                  },
-                  "unavailable": {
-                    "type": "string",
-                    "description": "The meaning of the freshness status unavailable, as a sentence."
-                  },
-                  "disputed": {
-                    "type": "string",
-                    "description": "The meaning of the freshness status disputed, as a sentence."
-                  }
-                }
-              },
-              "profile": {
-                "$ref": "#/$defs/companyRecord",
-                "description": "The complete record in the order of the public page: every section with its state, provenance and meaning."
-              }
-            },
-            "not": {
-              "anyOf": [
-                {
-                  "required": [
-                    "rating"
-                  ]
-                },
-                {
-                  "required": [
-                    "rank"
-                  ]
-                },
-                {
-                  "required": [
-                    "grade"
-                  ]
-                },
-                {
-                  "required": [
-                    "confidence"
-                  ]
-                }
-              ]
-            }
-          },
-          "witnessBlock": {
-            "description": "What Trooth itself has observed about the company's public surface. `standing` is either the word `witnessed` or null; there is no third value and no degree. Null throughout means no observation was returned, which is not a finding about the company.",
-            "oneOf": [
-              {
-                "type": "object",
-                "required": [
-                  "standing",
-                  "lastWitnessed",
-                  "firstWitnessedAt",
-                  "coverage",
-                  "continuity"
-                ],
-                "properties": {
-                  "standing": {
-                    "const": "witnessed",
-                    "description": "The word witnessed: Trooth has a reading of this public surface. It is not a grade and has no degrees."
-                  },
-                  "lastWitnessed": {
-                    "$ref": "#/$defs/nullableString",
-                    "description": "When the latest reading was taken. An ISO 8601 date-time in UTC, or null when none is recorded."
-                  },
-                  "firstWitnessedAt": {
-                    "$ref": "#/$defs/nullableString",
-                    "description": "When the first reading of this company was taken. An ISO 8601 date-time in UTC, or null when none is recorded."
-                  },
-                  "coverage": {
+                  "representative": {
                     "oneOf": [
                       {
                         "type": "null"
@@ -534,792 +311,571 @@
                       {
                         "type": "object",
                         "required": [
-                          "checksPassed",
-                          "checksRun"
+                          "id",
+                          "attested_at",
+                          "method"
                         ],
+                        "additionalProperties": false,
                         "properties": {
-                          "checksPassed": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Checks read whose outcome was as expected. Part of checksRun, not a separate addend."
-                          },
-                          "checksRun": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "description": "Checks read in the latest reading."
-                          },
-                          "source": {
-                            "enum": [
-                              "witness_statement",
-                              "result_tally"
-                            ],
-                            "description": "What checksRun and checksPassed count. witness_statement: computed from the signed witness statement's entries; checksRun is checks read in this reading. result_tally: the reading's own tally for a reading with no statement; not a count of checks read. Additive in contract 2 (2026-09-26); absent on responses served before it."
-                          },
-                          "definition": {
+                          "id": {
                             "type": "string",
-                            "description": "The same meaning, as a sentence."
+                            "pattern": "^trooth:person:[0-9a-f]{16}$",
+                            "description": "An opaque id for the person who attested at claim time that they may act for the company: the first 16 hex characters of SHA-256 over a fixed label, the owner account id and the domain. It holds no personal data and is stable for this claim."
                           },
-                          "checksNotRead": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Entries in the reading that were not read in it. Present when source is witness_statement."
+                          "attested_at": {
+                            "type": "string",
+                            "description": "When the person made the attestation (ISO 8601)."
                           },
-                          "checksNotAsExpected": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Entries read whose outcome was not as expected: checksRun minus checksPassed, so checksRun = checksPassed + checksNotAsExpected. Present when source is witness_statement. Additive (2026-09-28)."
-                          },
-                          "checksInReading": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "description": "checksRun plus checksNotRead. Present when source is witness_statement."
+                          "method": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "dns_txt",
+                              "domain_email_code",
+                              "identity_provider_sign_in",
+                              null
+                            ],
+                            "description": "The proof that person completed for this claim, in the same words as claim.method."
                           }
                         }
                       }
                     ],
-                    "description": "What the latest reading counted, reported apart and never combined into one number; null when no counts are available."
-                  },
-                  "continuity": {
-                    "type": "object",
-                    "required": [
-                      "recordBegan",
-                      "unbrokenSince",
-                      "unbrokenReadings",
-                      "totalReadings"
-                    ],
-                    "properties": {
-                      "recordBegan": {
-                        "$ref": "#/$defs/nullableString",
-                        "description": "When the reading series began. An ISO 8601 date-time in UTC, or null when none is recorded."
-                      },
-                      "unbrokenSince": {
-                        "$ref": "#/$defs/nullableString",
-                        "description": "Since when readings have stayed within the gap tolerance. An ISO 8601 date-time in UTC, or null when none is recorded."
-                      },
-                      "unbrokenReadings": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "description": "Readings in the current unbroken series."
-                      },
-                      "totalReadings": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "description": "Readings kept in the retention window."
-                      }
-                    },
-                    "description": "How long readings have run without a gap longer than methodology.gapTolerance."
+                    "description": "The person who attested at claim time that they may act for the company, or null when no attestation is recorded. An attestation is the person's own statement; Trooth does not collect evidence of corporate authority."
                   }
                 }
-              },
-              {
-                "type": "object",
-                "required": [
-                  "standing",
-                  "lastWitnessed",
-                  "firstWitnessedAt",
-                  "coverage",
-                  "continuity"
-                ],
-                "properties": {
-                  "standing": {
-                    "type": "null",
-                    "description": "Null: no reading was returned. That is not a finding about the company."
-                  },
-                  "lastWitnessed": {
-                    "type": "null",
-                    "description": "Null when there is no reading."
-                  },
-                  "firstWitnessedAt": {
-                    "type": "null",
-                    "description": "Null when there is no reading."
-                  },
-                  "coverage": {
-                    "type": "null",
-                    "description": "Null when there is no reading."
-                  },
-                  "continuity": {
-                    "type": "null",
-                    "description": "Null when there is no reading."
-                  }
-                }
-              }
-            ]
-          },
-          "witnessStatement": {
-            "type": "object",
-            "description": "Trooth's signed statement of the reading behind `witnessed`, carried exactly as the upstream witness worker signed it. Present only when that reading was signed under the witness statement; absent (the key is not in the body) for an older reading, which is not a failed check. `payload` is the signing input itself: check the Ed25519 signature over its UTF-8 bytes with the key `key_id` names at https://api.trooth.co/public/keys, decoding that key by its `encoding`, then parse `payload` to read it. Two versions exist, named by the payload's own `statement` field. trooth.witness-statement.v2 (readings signed from 2026-10-04) carries `statement`, `reading_id`, `domain`, `read_at`, `subject_scope` (`domain`, `surface`, `checks_in_scope`), `methodology` (`standard`, `mapping_version`, `mapping_url`, `mapping_digest`: sha256 over the exact bytes of the immutable mapping file at https://trooth.co/standard/check-mapping/<version>.json), `evaluator` (`name`, `version`), `evidence_manifest` (`digest`, `entries`, `canonicalization`), `checks` (each with `id`, `category`, `kind`, an `outcome` of `as expected`, `not as expected` or `not read`, and for every outcome other than `as expected` a `reason` with a versioned `code`, a `source_ref` or an explicit `withheld` and `withheld_reason`) and `counts` (`read`, `as_expected`, `not_as_expected`, `not_read`, `in_reading`, with read + not_read = in_reading and as_expected + not_as_expected = read). A timeout or an unavailable source is `not read`, never `not as expected`. trooth.witness-statement.v1 (earlier readings) carries `statement`, `reading_id`, `domain`, `read_at`, `checks` (`id`, `category`, `kind`, `outcome`) and `counts` (`read`, `as_expected`). Its assurance is narrower: it shows the key signed those outcome bytes and does not bind the check mapping, the evaluator version, the subject scope or the evidence sources. No digest is ever added to a v1 statement. Neither version carries a verdict, a threshold or a composite figure. This is the only signed part of the body. Trooth signs what it witnessed. It never signs on a company's behalf.",
-            "required": [
-              "payload",
-              "signature",
-              "key_id",
-              "alg",
-              "canonicalization"
-            ],
-            "properties": {
-              "payload": {
-                "type": "string",
-                "minLength": 2,
-                "description": "The exact string that was signed. Do not re-serialize it before checking."
-              },
-              "signature": {
-                "type": "string",
-                "pattern": "^ed25519:[A-Za-z0-9+/]+={0,2}$",
-                "description": "The prefix `ed25519:` followed by the standard base64 of the 64 signature bytes."
-              },
-              "key_id": {
-                "type": "string",
-                "minLength": 1,
-                "description": "The `kid` of the signing key at https://api.trooth.co/public/keys."
-              },
-              "alg": {
-                "const": "Ed25519",
-                "description": "The signature algorithm: Ed25519 (RFC 8032)."
-              },
-              "canonicalization": {
-                "type": "string",
-                "minLength": 1,
-                "description": "How the worker serialized the payload before signing: JSON with keys in a fixed order and no whitespace, as UTF-8. `payload` is already in that form."
               }
             }
           },
-          "witnessEvidenceManifest": {
-            "type": "array",
-            "description": "The evidence manifest a trooth.witness-statement.v2 statement binds through `evidence_manifest.digest`: one entry per check, each a public `source` reference or a `commitment` (sha256 over a secret salt, one 0x0a byte and a private reference) where publishing the reference would expose a company's declaration or a sensitive path. Recompute the digest as sha256 over the UTF-8 bytes of the entries sorted by `check_id` and serialized as JSON with keys `check_id` then `source` or `commitment` and no whitespace, and compare it to the signed digest. Additive (2026-10-04); present only beside a v2 statement, never beside v1, and not itself signed.",
-            "items": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "check_id",
-                    "source"
-                  ],
-                  "properties": {
-                    "check_id": {
-                      "type": "string",
-                      "minLength": 1,
-                      "description": "The check id in the mapping the statement names. Unique in the manifest."
-                    },
-                    "source": {
-                      "type": "string",
-                      "minLength": 1,
-                      "description": "The public URL the check read."
+          "relationships": {
+            "type": "object",
+            "description": "What a listed relationship does and does not establish. Additive in contract 2 (2026-09-26)."
+          },
+          "selection": {
+            "type": "object",
+            "description": "Which part of the record this response carries (REQ-4-1630). sections is the list asked for with ?sections=, or \"all\". recordVersion is the profile update time the page belongs to. total is how many facts the selected sections hold, returned how many this page carries, and truncated says whether any were left out; when it is true, next is a cursor to send as ?after= for the rest, refused as stale if the company publishes a new version in between. conflicts carries only the disagreements about facts on this page, and a contested fact stays marked.",
+            "required": [
+              "sections",
+              "recordVersion",
+              "limit",
+              "returned",
+              "total",
+              "truncated",
+              "next"
+            ],
+            "properties": {
+              "sections": {
+                "oneOf": [
+                  {
+                    "const": "all"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "enum": [
+                        "identity",
+                        "registration",
+                        "hosting",
+                        "pricing",
+                        "pricing-add-ons",
+                        "security",
+                        "privacy",
+                        "privacy-roles",
+                        "recovery",
+                        "ai-practices"
+                      ]
                     }
                   }
-                },
-                {
-                  "type": "object",
-                  "required": [
-                    "check_id",
-                    "commitment"
-                  ],
-                  "properties": {
-                    "check_id": {
-                      "type": "string",
-                      "minLength": 1,
-                      "description": "The check id in the mapping the statement names. Unique in the manifest."
-                    },
-                    "commitment": {
-                      "type": "string",
-                      "pattern": "^sha256:[0-9a-f]{64}$",
-                      "description": "sha256 over a secret salt, one 0x0a byte and the private reference; only the company holding it can open it."
-                    }
-                  }
-                }
+                ],
+                "description": "The section ids asked for, or the word all."
+              },
+              "recordVersion": {
+                "type": "string",
+                "description": "The record version this page was read from. Use it with next to page through one version."
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Facts per page as served, at most 200."
+              },
+              "returned": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Facts on this page."
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Facts in the selected sections."
+              },
+              "truncated": {
+                "type": "boolean",
+                "description": "True when more facts follow on another page."
+              },
+              "next": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The cursor for the next page, or null when this page is the last."
+              },
+              "note": {
+                "type": "string",
+                "description": "What this page holds, as a sentence."
+              }
+            }
+          },
+          "factFreshnessStatuses": {
+            "type": "object",
+            "description": "One sentence of meaning for each value of facts[].record.freshness.status.",
+            "required": [
+              "current",
+              "due",
+              "stale",
+              "not_collected",
+              "unknown",
+              "unavailable",
+              "disputed"
+            ],
+            "properties": {
+              "current": {
+                "type": "string",
+                "description": "The meaning of the freshness status current, as a sentence."
+              },
+              "due": {
+                "type": "string",
+                "description": "The meaning of the freshness status due, as a sentence."
+              },
+              "stale": {
+                "type": "string",
+                "description": "The meaning of the freshness status stale, as a sentence."
+              },
+              "not_collected": {
+                "type": "string",
+                "description": "The meaning of the freshness status not_collected, as a sentence."
+              },
+              "unknown": {
+                "type": "string",
+                "description": "The meaning of the freshness status unknown, as a sentence."
+              },
+              "unavailable": {
+                "type": "string",
+                "description": "The meaning of the freshness status unavailable, as a sentence."
+              },
+              "disputed": {
+                "type": "string",
+                "description": "The meaning of the freshness status disputed, as a sentence."
+              }
+            }
+          },
+          "profile": {
+            "$ref": "#/components/schemas/NetworkProfileV2_companyRecord",
+            "description": "The complete record in the order of the public page: every section with its state, provenance and meaning."
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "rating"
+              ]
+            },
+            {
+              "required": [
+                "rank"
+              ]
+            },
+            {
+              "required": [
+                "grade"
+              ]
+            },
+            {
+              "required": [
+                "confidence"
               ]
             }
-          },
-          "methodology": {
+          ]
+        }
+      },
+      "NetworkProfileV2_witnessBlock": {
+        "description": "What Trooth itself has observed about the company's public surface. `standing` is either the word `witnessed` or null; there is no third value and no degree. Null throughout means no observation was returned, which is not a finding about the company.",
+        "oneOf": [
+          {
             "type": "object",
-            "description": "How the witnessed block was produced and what it does not cover. Included in every response so a reader restating witnessed elsewhere can carry the limits with it.",
             "required": [
-              "cadence",
-              "gapTolerance",
-              "retention",
-              "freshness",
-              "exclusions",
-              "summary"
+              "standing",
+              "lastWitnessed",
+              "firstWitnessedAt",
+              "coverage",
+              "continuity"
             ],
             "properties": {
-              "cadence": {
-                "type": "string",
-                "description": "How often readings are attempted, as a sentence."
+              "standing": {
+                "const": "witnessed",
+                "description": "The word witnessed: Trooth has a reading of this public surface. It is not a grade and has no degrees."
               },
-              "gapTolerance": {
-                "type": "string",
-                "description": "The longest gap between readings that still counts as unbroken, as a sentence."
+              "lastWitnessed": {
+                "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+                "description": "When the latest reading was taken. An ISO 8601 date-time in UTC, or null when none is recorded."
               },
-              "retention": {
-                "type": "string",
-                "description": "How long readings are kept, as a sentence."
+              "firstWitnessedAt": {
+                "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+                "description": "When the first reading of this company was taken. An ISO 8601 date-time in UTC, or null when none is recorded."
               },
-              "freshness": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": [
-                    "category",
-                    "label",
-                    "window"
-                  ],
-                  "properties": {
-                    "category": {
-                      "type": "string",
-                      "description": "The fact category id."
-                    },
-                    "label": {
-                      "type": "string",
-                      "description": "The category as words."
-                    },
-                    "window": {
-                      "type": "string",
-                      "description": "How long an observation in this category stays current, as words (for example 48 hours)."
+              "coverage": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "checksPassed",
+                      "checksRun"
+                    ],
+                    "properties": {
+                      "checksPassed": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "Checks read whose outcome was as expected. Part of checksRun, not a separate addend."
+                      },
+                      "checksRun": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Checks read in the latest reading."
+                      },
+                      "source": {
+                        "enum": [
+                          "witness_statement",
+                          "result_tally"
+                        ],
+                        "description": "What checksRun and checksPassed count. witness_statement: computed from the signed witness statement's entries; checksRun is checks read in this reading. result_tally: the reading's own tally for a reading with no statement; not a count of checks read. Additive in contract 2 (2026-09-26); absent on responses served before it."
+                      },
+                      "definition": {
+                        "type": "string",
+                        "description": "The same meaning, as a sentence."
+                      },
+                      "checksNotRead": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "Entries in the reading that were not read in it. Present when source is witness_statement."
+                      },
+                      "checksNotAsExpected": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "Entries read whose outcome was not as expected: checksRun minus checksPassed, so checksRun = checksPassed + checksNotAsExpected. Present when source is witness_statement. Additive (2026-09-28)."
+                      },
+                      "checksInReading": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "checksRun plus checksNotRead. Present when source is witness_statement."
+                      }
                     }
                   }
-                },
-                "description": "For each category of fact, how long an observation stays current."
+                ],
+                "description": "What the latest reading counted, reported apart and never combined into one number; null when no counts are available."
               },
-              "exclusions": {
-                "type": "array",
-                "items": {
-                  "type": "string"
+              "continuity": {
+                "type": "object",
+                "required": [
+                  "recordBegan",
+                  "unbrokenSince",
+                  "unbrokenReadings",
+                  "totalReadings"
+                ],
+                "properties": {
+                  "recordBegan": {
+                    "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+                    "description": "When the reading series began. An ISO 8601 date-time in UTC, or null when none is recorded."
+                  },
+                  "unbrokenSince": {
+                    "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+                    "description": "Since when readings have stayed within the gap tolerance. An ISO 8601 date-time in UTC, or null when none is recorded."
+                  },
+                  "unbrokenReadings": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Readings in the current unbroken series."
+                  },
+                  "totalReadings": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Readings kept in the retention window."
+                  }
                 },
-                "minItems": 1,
-                "description": "What the readings do not cover, one sentence each."
-              },
-              "summary": {
-                "type": "string",
-                "description": "The methodology in one paragraph, for a reader restating witnessed elsewhere."
+                "description": "How long readings have run without a gap longer than methodology.gapTolerance."
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "standing",
+              "lastWitnessed",
+              "firstWitnessedAt",
+              "coverage",
+              "continuity"
+            ],
+            "properties": {
+              "standing": {
+                "type": "null",
+                "description": "Null: no reading was returned. That is not a finding about the company."
+              },
+              "lastWitnessed": {
+                "type": "null",
+                "description": "Null when there is no reading."
+              },
+              "firstWitnessedAt": {
+                "type": "null",
+                "description": "Null when there is no reading."
+              },
+              "coverage": {
+                "type": "null",
+                "description": "Null when there is no reading."
+              },
+              "continuity": {
+                "type": "null",
+                "description": "Null when there is no reading."
+              }
+            }
+          }
+        ]
+      },
+      "NetworkProfileV2_witnessStatement": {
+        "type": "object",
+        "description": "Trooth's signed statement of the reading behind `witnessed`, carried exactly as the upstream witness worker signed it. Present only when that reading was signed under the witness statement; absent (the key is not in the body) for an older reading, which is not a failed check. `payload` is the signing input itself: check the Ed25519 signature over its UTF-8 bytes with the key `key_id` names at https://api.trooth.co/public/keys, decoding that key by its `encoding`, then parse `payload` to read it. Two versions exist, named by the payload's own `statement` field. trooth.witness-statement.v2 (readings signed from 2026-10-04) carries `statement`, `reading_id`, `domain`, `read_at`, `subject_scope` (`domain`, `surface`, `checks_in_scope`), `methodology` (`standard`, `mapping_version`, `mapping_url`, `mapping_digest`: sha256 over the exact bytes of the immutable mapping file at https://trooth.co/standard/check-mapping/<version>.json), `evaluator` (`name`, `version`), `evidence_manifest` (`digest`, `entries`, `canonicalization`), `checks` (each with `id`, `category`, `kind`, an `outcome` of `as expected`, `not as expected` or `not read`, and for every outcome other than `as expected` a `reason` with a versioned `code`, a `source_ref` or an explicit `withheld` and `withheld_reason`) and `counts` (`read`, `as_expected`, `not_as_expected`, `not_read`, `in_reading`, with read + not_read = in_reading and as_expected + not_as_expected = read). A timeout or an unavailable source is `not read`, never `not as expected`. trooth.witness-statement.v1 (earlier readings) carries `statement`, `reading_id`, `domain`, `read_at`, `checks` (`id`, `category`, `kind`, `outcome`) and `counts` (`read`, `as_expected`). Its assurance is narrower: it shows the key signed those outcome bytes and does not bind the check mapping, the evaluator version, the subject scope or the evidence sources. No digest is ever added to a v1 statement. Neither version carries a verdict, a threshold or a composite figure. This is the only signed part of the body. Trooth signs what it witnessed. It never signs on a company's behalf.",
+        "required": [
+          "payload",
+          "signature",
+          "key_id",
+          "alg",
+          "canonicalization"
+        ],
+        "properties": {
+          "payload": {
+            "type": "string",
+            "minLength": 2,
+            "description": "The exact string that was signed. Do not re-serialize it before checking."
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^ed25519:[A-Za-z0-9+/]+={0,2}$",
+            "description": "The prefix `ed25519:` followed by the standard base64 of the 64 signature bytes."
+          },
+          "key_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The `kid` of the signing key at https://api.trooth.co/public/keys."
+          },
+          "alg": {
+            "const": "Ed25519",
+            "description": "The signature algorithm: Ed25519 (RFC 8032)."
+          },
+          "canonicalization": {
+            "type": "string",
+            "minLength": 1,
+            "description": "How the worker serialized the payload before signing: JSON with keys in a fixed order and no whitespace, as UTF-8. `payload` is already in that form."
+          }
+        }
+      },
+      "NetworkProfileV2_witnessEvidenceManifest": {
+        "type": "array",
+        "description": "The evidence manifest a trooth.witness-statement.v2 statement binds through `evidence_manifest.digest`: one entry per check, each a public `source` reference or a `commitment` (sha256 over a secret salt, one 0x0a byte and a private reference) where publishing the reference would expose a company's declaration or a sensitive path. Recompute the digest as sha256 over the UTF-8 bytes of the entries sorted by `check_id` and serialized as JSON with keys `check_id` then `source` or `commitment` and no whitespace, and compare it to the signed digest. Additive (2026-10-04); present only beside a v2 statement, never beside v1, and not itself signed.",
+        "items": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "check_id",
+                "source"
+              ],
+              "properties": {
+                "check_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The check id in the mapping the statement names. Unique in the manifest."
+                },
+                "source": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The public URL the check read."
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "check_id",
+                "commitment"
+              ],
+              "properties": {
+                "check_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The check id in the mapping the statement names. Unique in the manifest."
+                },
+                "commitment": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "description": "sha256 over a secret salt, one 0x0a byte and the private reference; only the company holding it can open it."
+                }
+              }
+            }
+          ]
+        }
+      },
+      "NetworkProfileV2_methodology": {
+        "type": "object",
+        "description": "How the witnessed block was produced and what it does not cover. Included in every response so a reader restating witnessed elsewhere can carry the limits with it.",
+        "required": [
+          "cadence",
+          "gapTolerance",
+          "retention",
+          "freshness",
+          "exclusions",
+          "summary"
+        ],
+        "properties": {
+          "cadence": {
+            "type": "string",
+            "description": "How often readings are attempted, as a sentence."
+          },
+          "gapTolerance": {
+            "type": "string",
+            "description": "The longest gap between readings that still counts as unbroken, as a sentence."
+          },
+          "retention": {
+            "type": "string",
+            "description": "How long readings are kept, as a sentence."
+          },
+          "freshness": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "category",
+                "label",
+                "window"
+              ],
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "description": "The fact category id."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The category as words."
+                },
+                "window": {
+                  "type": "string",
+                  "description": "How long an observation in this category stays current, as words (for example 48 hours)."
+                }
+              }
+            },
+            "description": "For each category of fact, how long an observation stays current."
+          },
+          "exclusions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "What the readings do not cover, one sentence each."
+          },
+          "summary": {
+            "type": "string",
+            "description": "The methodology in one paragraph, for a reader restating witnessed elsewhere."
+          }
+        }
+      },
+      "NetworkProfileV2_origin": {
+        "description": "Who said it. company-declared is the company's own statement; witnessed is Trooth's observation; public-source is a named third party. The order accounts are listed in is fixed and is not a ranking.",
+        "enum": [
+          "company-declared",
+          "witnessed",
+          "public-source"
+        ]
+      },
+      "NetworkProfileV2_fact": {
+        "type": "object",
+        "required": [
+          "key",
+          "category",
+          "label",
+          "value",
+          "origin"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+\\.[a-z0-9-]+$",
+            "description": "The stable field key, section.field (for example identity.legal-name)."
+          },
+          "category": {
+            "type": "string",
+            "description": "The section the fact belongs to, as words."
+          },
+          "label": {
+            "type": "string",
+            "description": "The field name, as words."
+          },
+          "value": {
+            "type": "string",
+            "description": "The value as published, as text."
           },
           "origin": {
-            "description": "Who said it. company-declared is the company's own statement; witnessed is Trooth's observation; public-source is a named third party. The order accounts are listed in is fixed and is not a ranking.",
-            "enum": [
-              "company-declared",
-              "witnessed",
-              "public-source"
-            ]
+            "$ref": "#/components/schemas/NetworkProfileV2_origin",
+            "description": "Who said it: company-declared, witnessed or public-source."
           },
-          "fact": {
+          "contested": {
+            "type": "boolean",
+            "description": "True when another source gave a different account; the accounts are in conflicts under the same key, and value is one of them, not the winner."
+          },
+          "claim": {
             "type": "object",
+            "description": "Typed provenance for this claim, additive in contract 2 (2026-09-26). Fields Trooth does not hold are null and named in unknown; a claim never inherits the reading's time or signature.",
             "required": [
-              "key",
-              "category",
-              "label",
-              "value",
-              "origin"
+              "claimId",
+              "subject",
+              "evidenceClass",
+              "signed",
+              "issuerAuthenticated",
+              "unknown"
             ],
             "properties": {
-              "key": {
+              "claimId": {
                 "type": "string",
-                "pattern": "^[a-z0-9-]+\\.[a-z0-9-]+$",
-                "description": "The stable field key, section.field (for example identity.legal-name)."
-              },
-              "category": {
-                "type": "string",
-                "description": "The section the fact belongs to, as words."
-              },
-              "label": {
-                "type": "string",
-                "description": "The field name, as words."
-              },
-              "value": {
-                "type": "string",
-                "description": "The value as published, as text."
-              },
-              "origin": {
-                "$ref": "#/$defs/origin",
-                "description": "Who said it: company-declared, witnessed or public-source."
-              },
-              "contested": {
-                "type": "boolean",
-                "description": "True when another source gave a different account; the accounts are in conflicts under the same key, and value is one of them, not the winner."
-              },
-              "claim": {
-                "type": "object",
-                "description": "Typed provenance for this claim, additive in contract 2 (2026-09-26). Fields Trooth does not hold are null and named in unknown; a claim never inherits the reading's time or signature.",
-                "required": [
-                  "claimId",
-                  "subject",
-                  "evidenceClass",
-                  "signed",
-                  "issuerAuthenticated",
-                  "unknown"
-                ],
-                "properties": {
-                  "claimId": {
-                    "type": "string",
-                    "description": "The claim id: the domain, a # and the field key. Stable across record versions."
-                  },
-                  "subject": {
-                    "type": "object",
-                    "required": [
-                      "domain",
-                      "scope"
-                    ],
-                    "properties": {
-                      "domain": {
-                        "type": "string",
-                        "description": "The company domain the claim is about."
-                      },
-                      "scope": {
-                        "const": "company",
-                        "description": "Always company: the claim is about the company as a whole."
-                      }
-                    },
-                    "description": "What the claim is about."
-                  },
-                  "evidenceClass": {
-                    "enum": [
-                      "company_declaration",
-                      "trooth_observation",
-                      "public_record"
-                    ],
-                    "description": "company_declaration: the company said it. trooth_observation: Trooth read it from the public surface. public_record: a named outside source."
-                  },
-                  "declaredAt": {
-                    "oneOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "For a company declaration, the time an authorized publish on Trooth first carried the current value, or of a later publish at which an owner or admin declared every published fact again. Null for a fact published before Trooth began recording it, unchanged since and not declared again; never a profile version date or a reading time."
-                  },
-                  "observedAt": {
-                    "oneOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "When Trooth or a public source observed the value, or null. An ISO 8601 date-time in UTC, or null when none is recorded."
-                  },
-                  "validUntil": {
-                    "oneOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "When the claim stops applying, when the source states it; otherwise null."
-                  },
-                  "evidenceRef": {
-                    "oneOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "The reference a declared fact cites, as the company gave it, or null. Trooth has not opened it."
-                  },
-                  "signed": {
-                    "const": false,
-                    "description": "Always false: a fact is not signed by anyone. The one signed object is witnessStatement."
-                  },
-                  "issuerAuthenticated": {
-                    "type": "boolean",
-                    "description": "True only when the publish that carried this value was accepted from a signed-in Trooth session whose workspace role was owner or admin, or from the workspace AI agent acting in such a session while its publishing permission was on. False for every other declaration, every observation and every public record. It is about the publishing session: it does not mean Trooth checked the statement, that a document issuer was authenticated, or that the person holds legal authority for the company. Before 2026-10-04 this field was always false."
-                  },
-                  "unknown": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "Names of claim fields Trooth does not know for this fact; they are listed rather than guessed."
-                  },
-                  "declaredBy": {
-                    "description": "Additive (2026-10-04). Present only when declaredAt is set: the actor class and workspace role of the session that published the value. Absent otherwise. Carries no personal data.",
-                    "type": "object",
-                    "required": [
-                      "actorClass",
-                      "role"
-                    ],
-                    "properties": {
-                      "actorClass": {
-                        "enum": [
-                          "person",
-                          "agent"
-                        ],
-                        "description": "person or agent: what kind of signed-in actor published the value."
-                      },
-                      "role": {
-                        "enum": [
-                          "owner",
-                          "admin",
-                          "editor",
-                          "unknown"
-                        ],
-                        "description": "The publisher's role in the company workspace: owner, admin, editor, or unknown."
-                      }
-                    }
-                  }
-                }
-              },
-              "record": {
-                "type": "object",
-                "description": "Per-fact identity, issuer, method version and freshness, additive in contract 2 (2026-09-29, REQ-4-1640 and REQ-4-1588). freshness.status tells seven answers apart instead of one null: current, due and stale are a dated observation against its category window; not_collected is a company statement Trooth does not re-read; unknown is an origin with no recorded observation time or an unreadable date; unavailable is a source not read on this pass; disputed means another account is in conflicts. Fields Trooth does not hold are null and explained in unknown.",
-                "required": [
-                  "companyId",
-                  "canonicalDomain",
-                  "recordVersion",
-                  "factId",
-                  "provenanceKind",
-                  "issuer",
-                  "sourceReference",
-                  "observedAt",
-                  "attestedAt",
-                  "collectedAt",
-                  "evidenceReference",
-                  "methodVersion",
-                  "freshness",
-                  "unknown"
-                ],
-                "properties": {
-                  "companyId": {
-                    "type": "string",
-                    "description": "The company's id on the Network (its slug)."
-                  },
-                  "canonicalDomain": {
-                    "oneOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "The company's domain, or null."
-                  },
-                  "recordVersion": {
-                    "oneOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "The record version this fact was read from, or null."
-                  },
-                  "factId": {
-                    "type": "string",
-                    "description": "The fact id; equals claim.claimId."
-                  },
-                  "provenanceKind": {
-                    "enum": [
-                      "company_declaration",
-                      "trooth_observation",
-                      "public_record"
-                    ],
-                    "description": "The same value as claim.evidenceClass."
-                  },
-                  "issuer": {
-                    "type": "object",
-                    "required": [
-                      "kind",
-                      "name"
-                    ],
-                    "properties": {
-                      "kind": {
-                        "enum": [
-                          "company",
-                          "trooth",
-                          "public_source"
-                        ],
-                        "description": "company, trooth or public_source."
-                      },
-                      "name": {
-                        "oneOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ],
-                        "description": "The issuer name, or null."
-                      }
-                    },
-                    "description": "Who issued the value."
-                  },
-                  "sourceReference": {
-                    "type": "string",
-                    "description": "Where the value can be read: the profile page for a declaration, the source for a public record."
-                  },
-                  "observedAt": {
-                    "oneOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "The same value as claim.observedAt."
-                  },
-                  "attestedAt": {
-                    "oneOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "The same value as claim.declaredAt."
-                  },
-                  "collectedAt": {
-                    "type": "null",
-                    "description": "Always null: the record keeps when a version was published, not when each field entered it."
-                  },
-                  "evidenceReference": {
-                    "oneOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "The same value as claim.evidenceRef."
-                  },
-                  "methodVersion": {
-                    "type": "string",
-                    "description": "The version of the method that produced this record entry."
-                  },
-                  "freshness": {
-                    "type": "object",
-                    "required": [
-                      "status",
-                      "collection",
-                      "lastObservedAt",
-                      "windowDays",
-                      "windowCategory",
-                      "nextExpectedRefresh"
-                    ],
-                    "properties": {
-                      "status": {
-                        "enum": [
-                          "current",
-                          "due",
-                          "stale",
-                          "not_collected",
-                          "unknown",
-                          "unavailable",
-                          "disputed"
-                        ],
-                        "description": "One of the statuses explained in factFreshnessStatuses."
-                      },
-                      "collection": {
-                        "enum": [
-                          "declared_by_company",
-                          "read_by_trooth",
-                          "public_source"
-                        ],
-                        "description": "How the value arrives: declared_by_company, read_by_trooth or public_source."
-                      },
-                      "lastObservedAt": {
-                        "oneOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ],
-                        "description": "The last dated observation, or null. An ISO 8601 date-time in UTC, or null when none is recorded."
-                      },
-                      "windowDays": {
-                        "oneOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "integer",
-                            "minimum": 0
-                          }
-                        ],
-                        "description": "The freshness window in days, or null when the value has none."
-                      },
-                      "windowCategory": {
-                        "oneOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ],
-                        "description": "The methodology.freshness category that sets the window, or null."
-                      },
-                      "nextExpectedRefresh": {
-                        "oneOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ],
-                        "description": "When a fresh observation is next expected, or null."
-                      }
-                    },
-                    "description": "Whether the value is inside its category freshness window."
-                  },
-                  "unknown": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "Record fields Trooth does not know for this fact, each with the reason."
-                  }
-                }
-              }
-            }
-          },
-          "conflict": {
-            "type": "object",
-            "required": [
-              "key",
-              "category",
-              "label",
-              "accounts"
-            ],
-            "properties": {
-              "key": {
-                "type": "string",
-                "description": "The field key the accounts disagree on."
-              },
-              "category": {
-                "type": "string",
-                "description": "The section, as words."
-              },
-              "label": {
-                "type": "string",
-                "description": "The field name, as words."
-              },
-              "accounts": {
-                "type": "array",
-                "minItems": 2,
-                "items": {
-                  "type": "object",
-                  "required": [
-                    "origin",
-                    "value"
-                  ],
-                  "properties": {
-                    "origin": {
-                      "$ref": "#/$defs/origin",
-                      "description": "Who gave this account."
-                    },
-                    "value": {
-                      "type": "string",
-                      "description": "The account, as text."
-                    }
-                  }
-                },
-                "description": "Each account, with who gave it. Listed in a fixed order that is not a ranking."
-              }
-            }
-          },
-          "signing": {
-            "type": "object",
-            "description": "What in this response is signed. Additive in contract 2 (2026-09-26). profileSigned is always false: the one signed object is witnessStatement, which covers one reading and nothing else.",
-            "required": [
-              "profileSigned",
-              "signedArtifact",
-              "subject"
-            ],
-            "properties": {
-              "profileSigned": {
-                "const": false,
-                "description": "Always false: this response as a whole is not signed."
-              },
-              "signedArtifact": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "const": "witnessStatement"
-                  }
-                ],
-                "description": "The name of the one signed field, witnessStatement, or null when there is no statement."
-              },
-              "artifactType": {
-                "type": "string",
-                "enum": [
-                  "trooth.witness-statement.v1",
-                  "trooth.witness-statement.v2"
-                ],
-                "description": "The signed statement's own type tag. With no statement, trooth.witness-statement.v1."
+                "description": "The claim id: the domain, a # and the field key. Stable across record versions."
               },
               "subject": {
-                "type": "string",
-                "description": "What the signed statement covers and does not cover, as a sentence."
-              },
-              "binding": {
-                "description": "What the statement binds (additive, 2026-10-04). null when there is no statement. `status` is `present` for v2 and `absent` for v1, whose assurance is narrower: v1 binds no mapping, evaluator version, scope or sources, and its digests here are null rather than filled in. This block is read from the payload; it is not a check of the signature or of the binding.",
-                "oneOf": [
-                  {
-                    "type": "null"
+                "type": "object",
+                "required": [
+                  "domain",
+                  "scope"
+                ],
+                "properties": {
+                  "domain": {
+                    "type": "string",
+                    "description": "The company domain the claim is about."
                   },
-                  {
-                    "type": "object",
-                    "required": [
-                      "status",
-                      "assurance"
-                    ],
-                    "properties": {
-                      "status": {
-                        "enum": [
-                          "present",
-                          "absent"
-                        ],
-                        "description": "present for a v2 statement, which binds the items below; absent for v1."
-                      },
-                      "mappingVersion": {
-                        "$ref": "#/$defs/nullableString",
-                        "description": "The check mapping version the statement binds, or null."
-                      },
-                      "mappingUrl": {
-                        "$ref": "#/$defs/nullableString",
-                        "description": "Where the exact mapping bytes are served, or null."
-                      },
-                      "mappingDigest": {
-                        "$ref": "#/$defs/nullableString",
-                        "description": "sha256: plus the hex SHA-256 of those exact bytes, or null."
-                      },
-                      "evaluatorVersion": {
-                        "$ref": "#/$defs/nullableString",
-                        "description": "The evaluator version the statement binds, or null."
-                      },
-                      "evidenceManifestDigest": {
-                        "$ref": "#/$defs/nullableString",
-                        "description": "The digest of the evidence manifest the statement binds, or null."
-                      },
-                      "assurance": {
-                        "type": "string",
-                        "description": "What the binding shows and does not show, as a sentence."
-                      },
-                      "mappingVersions": {
-                        "type": "string",
-                        "description": "The index of every published mapping version."
-                      }
-                    }
+                  "scope": {
+                    "const": "company",
+                    "description": "Always company: the claim is about the company as a whole."
                   }
-                ]
+                },
+                "description": "What the claim is about."
               },
-              "keyId": {
+              "evidenceClass": {
+                "enum": [
+                  "company_declaration",
+                  "trooth_observation",
+                  "public_record"
+                ],
+                "description": "company_declaration: the company said it. trooth_observation: Trooth read it from the public surface. public_record: a named outside source."
+              },
+              "declaredAt": {
                 "oneOf": [
                   {
                     "type": "null"
@@ -1328,11 +884,7 @@
                     "type": "string"
                   }
                 ],
-                "description": "The kid of the signing key, or null when there is no statement."
-              },
-              "keyPurpose": {
-                "type": "string",
-                "description": "What the signing key signs, as a sentence."
+                "description": "For a company declaration, the time an authorized publish on Trooth first carried the current value, or of a later publish at which an owner or admin declared every published fact again. Null for a fact published before Trooth began recording it, unchanged since and not declared again; never a profile version date or a reading time."
               },
               "observedAt": {
                 "oneOf": [
@@ -1343,359 +895,970 @@
                     "type": "string"
                   }
                 ],
-                "description": "The time the statement carries, or null. An ISO 8601 date-time in UTC, or null when none is recorded."
+                "description": "When Trooth or a public source observed the value, or null. An ISO 8601 date-time in UTC, or null when none is recorded."
               },
-              "timeSource": {
-                "type": "string",
-                "description": "Where that time comes from. Trooth asserts it when signing; there is no external timestamp."
+              "validUntil": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "When the claim stops applying, when the source states it; otherwise null."
               },
-              "verify": {
-                "type": "string",
-                "description": "How to check the statement yourself."
+              "evidenceRef": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "The reference a declared fact cites, as the company gave it, or null. Trooth has not opened it."
               },
-              "keys": {
-                "type": "string",
-                "description": "The published key list."
+              "signed": {
+                "const": false,
+                "description": "Always false: a fact is not signed by anyone. The one signed object is witnessStatement."
               },
-              "keyPolicy": {
-                "type": "string",
-                "description": "The key lifecycle policy page."
+              "issuerAuthenticated": {
+                "type": "boolean",
+                "description": "True only when the publish that carried this value was accepted from a signed-in Trooth session whose workspace role was owner or admin, or from the workspace AI agent acting in such a session while its publishing permission was on. False for every other declaration, every observation and every public record. It is about the publishing session: it does not mean Trooth checked the statement, that a document issuer was authenticated, or that the person holds legal authority for the company. Before 2026-10-04 this field was always false."
+              },
+              "unknown": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Names of claim fields Trooth does not know for this fact; they are listed rather than guessed."
+              },
+              "declaredBy": {
+                "description": "Additive (2026-10-04). Present only when declaredAt is set: the actor class and workspace role of the session that published the value. Absent otherwise. Carries no personal data.",
+                "type": "object",
+                "required": [
+                  "actorClass",
+                  "role"
+                ],
+                "properties": {
+                  "actorClass": {
+                    "enum": [
+                      "person",
+                      "agent"
+                    ],
+                    "description": "person or agent: what kind of signed-in actor published the value."
+                  },
+                  "role": {
+                    "enum": [
+                      "owner",
+                      "admin",
+                      "editor",
+                      "unknown"
+                    ],
+                    "description": "The publisher's role in the company workspace: owner, admin, editor, or unknown."
+                  }
+                }
               }
             }
           },
-          "recordField": {
+          "record": {
             "type": "object",
+            "description": "Per-fact identity, issuer, method version and freshness, additive in contract 2 (2026-09-29, REQ-4-1640 and REQ-4-1588). freshness.status tells seven answers apart instead of one null: current, due and stale are a dated observation against its category window; not_collected is a company statement Trooth does not re-read; unknown is an origin with no recorded observation time or an unreadable date; unavailable is a source not read on this pass; disputed means another account is in conflicts. Fields Trooth does not hold are null and explained in unknown.",
             "required": [
-              "label",
-              "value"
+              "companyId",
+              "canonicalDomain",
+              "recordVersion",
+              "factId",
+              "provenanceKind",
+              "issuer",
+              "sourceReference",
+              "observedAt",
+              "attestedAt",
+              "collectedAt",
+              "evidenceReference",
+              "methodVersion",
+              "freshness",
+              "unknown"
             ],
             "properties": {
-              "label": {
+              "companyId": {
                 "type": "string",
-                "description": "The field name, as words."
+                "description": "The company's id on the Network (its slug)."
               },
-              "value": {
-                "type": "string",
-                "description": "The value as published, as text."
-              }
-            },
-            "additionalProperties": false
-          },
-          "recordProvenance": {
-            "enum": [
-              "company_declared",
-              "trooth_observation",
-              "public_sources",
-              "named_customers",
-              "mixed"
-            ],
-            "description": "Who said it. company_declared: the company's own statement, published as written and not certified. trooth_observation: Trooth's reading of the company's public surface at the time shown. public_sources: named outside sources, each linked. named_customers: endorsements from named customers. mixed: more than one of these, labeled per group."
-          },
-          "recordItem": {
-            "type": "object",
-            "required": [
-              "title",
-              "fields",
-              "notes",
-              "links"
-            ],
-            "properties": {
-              "title": {
-                "type": "string",
-                "description": "The item title."
-              },
-              "fields": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/recordField"
-                },
-                "description": "The item fields, label and value."
-              },
-              "notes": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "Notes the record attaches to the item."
-              },
-              "links": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/recordField"
-                },
-                "description": "Links the item carries, label and value."
-              },
-              "data": {
-                "type": "object",
-                "description": "The structured object the item was read from, empty values removed and uploads dropped."
-              }
-            },
-            "additionalProperties": false
-          },
-          "recordGroup": {
-            "type": "object",
-            "required": [
-              "title",
-              "provenance",
-              "fields",
-              "items",
-              "notes"
-            ],
-            "properties": {
-              "title": {
-                "type": "string",
-                "description": "The group title, as on the page."
-              },
-              "provenance": {
-                "$ref": "#/$defs/recordProvenance",
-                "description": "Who said what is in this group."
-              },
-              "fields": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/recordField"
-                },
-                "description": "Fields of the group, label and value."
-              },
-              "items": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/recordItem"
-                },
-                "description": "Repeated items in the group (for example one per product)."
-              },
-              "notes": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "Notes the record attaches to the group."
-              }
-            },
-            "additionalProperties": false
-          },
-          "recordSection": {
-            "type": "object",
-            "required": [
-              "id",
-              "title",
-              "url",
-              "state",
-              "provenance",
-              "meaning",
-              "fields",
-              "groups",
-              "notes"
-            ],
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "The section id (for example overview, security). Usable in ?sections=."
-              },
-              "title": {
-                "type": "string",
-                "description": "The section title, as on the page."
-              },
-              "url": {
-                "type": "string",
-                "description": "The page that shows the section."
-              },
-              "state": {
-                "enum": [
-                  "published",
-                  "not_published",
-                  "hidden_by_company",
-                  "unavailable",
-                  "request_only"
-                ],
-                "description": "published: the company shows content here. not_published: the section is shown but empty; say it is not published, never fill it. hidden_by_company: the company chose not to show it; no values are carried. unavailable: Trooth could not read this part on this load; it is not empty. request_only: the content exists behind a request and is never carried."
-              },
-              "provenance": {
-                "$ref": "#/$defs/recordProvenance",
-                "description": "Who said what is in this section."
-              },
-              "meaning": {
-                "type": "string",
-                "description": "What an agent should say about this section, in one or two sentences."
-              },
-              "fields": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/recordField"
-                },
-                "description": "Fields of the section, label and value."
-              },
-              "groups": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/recordGroup"
-                },
-                "description": "Groups within the section."
-              },
-              "notes": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "Notes the record attaches to the section."
-              }
-            },
-            "additionalProperties": false
-          },
-          "companyRecord": {
-            "type": "object",
-            "description": "The complete machine-readable profile: every section the public page at canonicalUrl can show, in its order, each with a state, a provenance and a meaning. Additive in contract 2 (2026-10-05). Format trooth.company-profile.v1.",
-            "required": [
-              "format",
-              "name",
-              "canonicalUrl",
-              "markdownUrl",
-              "updatedAt",
-              "howToRead",
-              "completeness",
-              "header",
-              "sections"
-            ],
-            "properties": {
-              "format": {
-                "const": "trooth.company-profile.v1",
-                "description": "The record format."
-              },
-              "name": {
-                "type": "string",
-                "description": "The company name as published."
-              },
-              "canonicalUrl": {
-                "type": "string",
-                "description": "The company's public Trust Profile page."
-              },
-              "markdownUrl": {
-                "type": "string",
-                "description": "The same record as Markdown."
-              },
-              "updatedAt": {
-                "$ref": "#/$defs/nullableString",
-                "description": "When the company last published a change. An ISO 8601 date-time in UTC, or null when none is recorded."
-              },
-              "howToRead": {
-                "type": "string",
-                "description": "How to read and cite this record, as a paragraph."
-              },
-              "completeness": {
-                "type": "object",
-                "required": [
-                  "sections",
-                  "published",
-                  "notPublished",
-                  "hiddenByCompany",
-                  "unavailable",
-                  "requestOnly"
-                ],
-                "properties": {
-                  "sections": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "description": "The number of sections in the record."
+              "canonicalDomain": {
+                "oneOf": [
+                  {
+                    "type": "null"
                   },
-                  "published": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "Ids of sections with content."
-                  },
-                  "notPublished": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "Ids of sections shown but empty."
-                  },
-                  "hiddenByCompany": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "Ids of sections the company chose to hide."
-                  },
-                  "unavailable": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "Ids of sections that could not be read just now."
-                  },
-                  "requestOnly": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "Ids of sections shared on request only."
+                  {
+                    "type": "string"
                   }
-                },
-                "additionalProperties": false,
-                "description": "Which sections hold content and which do not, by state. A list, not a percentage."
+                ],
+                "description": "The company's domain, or null."
               },
-              "header": {
+              "recordVersion": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "The record version this fact was read from, or null."
+              },
+              "factId": {
+                "type": "string",
+                "description": "The fact id; equals claim.claimId."
+              },
+              "provenanceKind": {
+                "enum": [
+                  "company_declaration",
+                  "trooth_observation",
+                  "public_record"
+                ],
+                "description": "The same value as claim.evidenceClass."
+              },
+              "issuer": {
                 "type": "object",
                 "required": [
-                  "name",
-                  "tagline",
-                  "website",
-                  "logoUrl",
-                  "links",
-                  "callToAction"
+                  "kind",
+                  "name"
                 ],
                 "properties": {
+                  "kind": {
+                    "enum": [
+                      "company",
+                      "trooth",
+                      "public_source"
+                    ],
+                    "description": "company, trooth or public_source."
+                  },
                   "name": {
-                    "type": "string",
-                    "description": "The company name."
-                  },
-                  "tagline": {
-                    "type": "string",
-                    "description": "The tagline, or an empty string."
-                  },
-                  "website": {
-                    "type": "string",
-                    "description": "The company website, or an empty string."
-                  },
-                  "logoUrl": {
-                    "type": "string",
-                    "description": "The logo URL, or an empty string."
-                  },
-                  "links": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/recordField"
-                    },
-                    "description": "Links the company lists, label and value."
-                  },
-                  "callToAction": {
                     "oneOf": [
                       {
                         "type": "null"
                       },
                       {
-                        "$ref": "#/$defs/recordField"
+                        "type": "string"
                       }
                     ],
-                    "description": "The call to action the page shows, or null."
+                    "description": "The issuer name, or null."
                   }
                 },
-                "additionalProperties": false,
-                "description": "The page header: name, tagline, website, logo and links."
+                "description": "Who issued the value."
               },
-              "sections": {
+              "sourceReference": {
+                "type": "string",
+                "description": "Where the value can be read: the profile page for a declaration, the source for a public record."
+              },
+              "observedAt": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "The same value as claim.observedAt."
+              },
+              "attestedAt": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "The same value as claim.declaredAt."
+              },
+              "collectedAt": {
+                "type": "null",
+                "description": "Always null: the record keeps when a version was published, not when each field entered it."
+              },
+              "evidenceReference": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "The same value as claim.evidenceRef."
+              },
+              "methodVersion": {
+                "type": "string",
+                "description": "The version of the method that produced this record entry."
+              },
+              "freshness": {
+                "type": "object",
+                "required": [
+                  "status",
+                  "collection",
+                  "lastObservedAt",
+                  "windowDays",
+                  "windowCategory",
+                  "nextExpectedRefresh"
+                ],
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "current",
+                      "due",
+                      "stale",
+                      "not_collected",
+                      "unknown",
+                      "unavailable",
+                      "disputed"
+                    ],
+                    "description": "One of the statuses explained in factFreshnessStatuses."
+                  },
+                  "collection": {
+                    "enum": [
+                      "declared_by_company",
+                      "read_by_trooth",
+                      "public_source"
+                    ],
+                    "description": "How the value arrives: declared_by_company, read_by_trooth or public_source."
+                  },
+                  "lastObservedAt": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ],
+                    "description": "The last dated observation, or null. An ISO 8601 date-time in UTC, or null when none is recorded."
+                  },
+                  "windowDays": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    ],
+                    "description": "The freshness window in days, or null when the value has none."
+                  },
+                  "windowCategory": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ],
+                    "description": "The methodology.freshness category that sets the window, or null."
+                  },
+                  "nextExpectedRefresh": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ],
+                    "description": "When a fresh observation is next expected, or null."
+                  }
+                },
+                "description": "Whether the value is inside its category freshness window."
+              },
+              "unknown": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/recordSection"
+                  "type": "string"
                 },
-                "description": "Every section in page order."
+                "description": "Record fields Trooth does not know for this fact, each with the reason."
               }
-            },
-            "additionalProperties": false
+            }
           }
         }
+      },
+      "NetworkProfileV2_conflict": {
+        "type": "object",
+        "required": [
+          "key",
+          "category",
+          "label",
+          "accounts"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The field key the accounts disagree on."
+          },
+          "category": {
+            "type": "string",
+            "description": "The section, as words."
+          },
+          "label": {
+            "type": "string",
+            "description": "The field name, as words."
+          },
+          "accounts": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": [
+                "origin",
+                "value"
+              ],
+              "properties": {
+                "origin": {
+                  "$ref": "#/components/schemas/NetworkProfileV2_origin",
+                  "description": "Who gave this account."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The account, as text."
+                }
+              }
+            },
+            "description": "Each account, with who gave it. Listed in a fixed order that is not a ranking."
+          }
+        }
+      },
+      "NetworkProfileV2_signing": {
+        "type": "object",
+        "description": "What in this response is signed. Additive in contract 2 (2026-09-26). profileSigned is always false: the one signed object is witnessStatement, which covers one reading and nothing else.",
+        "required": [
+          "profileSigned",
+          "signedArtifact",
+          "subject"
+        ],
+        "properties": {
+          "profileSigned": {
+            "const": false,
+            "description": "Always false: this response as a whole is not signed."
+          },
+          "signedArtifact": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "const": "witnessStatement"
+              }
+            ],
+            "description": "The name of the one signed field, witnessStatement, or null when there is no statement."
+          },
+          "artifactType": {
+            "type": "string",
+            "enum": [
+              "trooth.witness-statement.v1",
+              "trooth.witness-statement.v2"
+            ],
+            "description": "The signed statement's own type tag. With no statement, trooth.witness-statement.v1."
+          },
+          "subject": {
+            "type": "string",
+            "description": "What the signed statement covers and does not cover, as a sentence."
+          },
+          "binding": {
+            "description": "What the statement binds (additive, 2026-10-04). null when there is no statement. `status` is `present` for v2 and `absent` for v1, whose assurance is narrower: v1 binds no mapping, evaluator version, scope or sources, and its digests here are null rather than filled in. This block is read from the payload; it is not a check of the signature or of the binding.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "status",
+                  "assurance"
+                ],
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "present",
+                      "absent"
+                    ],
+                    "description": "present for a v2 statement, which binds the items below; absent for v1."
+                  },
+                  "mappingVersion": {
+                    "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+                    "description": "The check mapping version the statement binds, or null."
+                  },
+                  "mappingUrl": {
+                    "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+                    "description": "Where the exact mapping bytes are served, or null."
+                  },
+                  "mappingDigest": {
+                    "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+                    "description": "sha256: plus the hex SHA-256 of those exact bytes, or null."
+                  },
+                  "evaluatorVersion": {
+                    "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+                    "description": "The evaluator version the statement binds, or null."
+                  },
+                  "evidenceManifestDigest": {
+                    "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+                    "description": "The digest of the evidence manifest the statement binds, or null."
+                  },
+                  "assurance": {
+                    "type": "string",
+                    "description": "What the binding shows and does not show, as a sentence."
+                  },
+                  "mappingVersions": {
+                    "type": "string",
+                    "description": "The index of every published mapping version."
+                  }
+                }
+              }
+            ]
+          },
+          "keyId": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "The kid of the signing key, or null when there is no statement."
+          },
+          "keyPurpose": {
+            "type": "string",
+            "description": "What the signing key signs, as a sentence."
+          },
+          "observedAt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "The time the statement carries, or null. An ISO 8601 date-time in UTC, or null when none is recorded."
+          },
+          "timeSource": {
+            "type": "string",
+            "description": "Where that time comes from. Trooth asserts it when signing; there is no external timestamp."
+          },
+          "verify": {
+            "type": "string",
+            "description": "How to check the statement yourself."
+          },
+          "keys": {
+            "type": "string",
+            "description": "The published key list."
+          },
+          "keyPolicy": {
+            "type": "string",
+            "description": "The key lifecycle policy page."
+          }
+        }
+      },
+      "NetworkProfileV2_recordField": {
+        "type": "object",
+        "required": [
+          "label",
+          "value"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "The field name, as words."
+          },
+          "value": {
+            "type": "string",
+            "description": "The value as published, as text."
+          }
+        },
+        "additionalProperties": false
+      },
+      "NetworkProfileV2_recordProvenance": {
+        "enum": [
+          "company_declared",
+          "trooth_observation",
+          "public_sources",
+          "named_customers",
+          "mixed"
+        ],
+        "description": "Who said it. company_declared: the company's own statement, published as written and not certified. trooth_observation: Trooth's reading of the company's public surface at the time shown. public_sources: named outside sources, each linked. named_customers: endorsements from named customers. mixed: more than one of these, labeled per group."
+      },
+      "NetworkProfileV2_recordItem": {
+        "type": "object",
+        "required": [
+          "title",
+          "fields",
+          "notes",
+          "links"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "The item title."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_recordField"
+            },
+            "description": "The item fields, label and value."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Notes the record attaches to the item."
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_recordField"
+            },
+            "description": "Links the item carries, label and value."
+          },
+          "data": {
+            "type": "object",
+            "description": "The structured object the item was read from, empty values removed and uploads dropped."
+          }
+        },
+        "additionalProperties": false
+      },
+      "NetworkProfileV2_recordGroup": {
+        "type": "object",
+        "required": [
+          "title",
+          "provenance",
+          "fields",
+          "items",
+          "notes"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "The group title, as on the page."
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/NetworkProfileV2_recordProvenance",
+            "description": "Who said what is in this group."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_recordField"
+            },
+            "description": "Fields of the group, label and value."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_recordItem"
+            },
+            "description": "Repeated items in the group (for example one per product)."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Notes the record attaches to the group."
+          }
+        },
+        "additionalProperties": false
+      },
+      "NetworkProfileV2_recordSection": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "url",
+          "state",
+          "provenance",
+          "meaning",
+          "fields",
+          "groups",
+          "notes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The section id (for example overview, security). Usable in ?sections=."
+          },
+          "title": {
+            "type": "string",
+            "description": "The section title, as on the page."
+          },
+          "url": {
+            "type": "string",
+            "description": "The page that shows the section."
+          },
+          "state": {
+            "enum": [
+              "published",
+              "not_published",
+              "hidden_by_company",
+              "unavailable",
+              "request_only"
+            ],
+            "description": "published: the company shows content here. not_published: the section is shown but empty; say it is not published, never fill it. hidden_by_company: the company chose not to show it; no values are carried. unavailable: Trooth could not read this part on this load; it is not empty. request_only: the content exists behind a request and is never carried."
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/NetworkProfileV2_recordProvenance",
+            "description": "Who said what is in this section."
+          },
+          "meaning": {
+            "type": "string",
+            "description": "What an agent should say about this section, in one or two sentences."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_recordField"
+            },
+            "description": "Fields of the section, label and value."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_recordGroup"
+            },
+            "description": "Groups within the section."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Notes the record attaches to the section."
+          }
+        },
+        "additionalProperties": false
+      },
+      "NetworkProfileV2_companyRecord": {
+        "type": "object",
+        "description": "The complete machine-readable profile: every section the public page at canonicalUrl can show, in its order, each with a state, a provenance and a meaning. Additive in contract 2 (2026-10-05). Format trooth.company-profile.v1.",
+        "required": [
+          "format",
+          "name",
+          "canonicalUrl",
+          "markdownUrl",
+          "updatedAt",
+          "howToRead",
+          "completeness",
+          "header",
+          "sections"
+        ],
+        "properties": {
+          "format": {
+            "const": "trooth.company-profile.v1",
+            "description": "The record format."
+          },
+          "name": {
+            "type": "string",
+            "description": "The company name as published."
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "description": "The company's public Trust Profile page."
+          },
+          "markdownUrl": {
+            "type": "string",
+            "description": "The same record as Markdown."
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+            "description": "When the company last published a change. An ISO 8601 date-time in UTC, or null when none is recorded."
+          },
+          "howToRead": {
+            "type": "string",
+            "description": "How to read and cite this record, as a paragraph."
+          },
+          "completeness": {
+            "type": "object",
+            "required": [
+              "sections",
+              "published",
+              "notPublished",
+              "hiddenByCompany",
+              "unavailable",
+              "requestOnly"
+            ],
+            "properties": {
+              "sections": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The number of sections in the record."
+              },
+              "published": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Ids of sections with content."
+              },
+              "notPublished": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Ids of sections shown but empty."
+              },
+              "hiddenByCompany": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Ids of sections the company chose to hide."
+              },
+              "unavailable": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Ids of sections that could not be read just now."
+              },
+              "requestOnly": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Ids of sections shared on request only."
+              }
+            },
+            "additionalProperties": false,
+            "description": "Which sections hold content and which do not, by state. A list, not a percentage."
+          },
+          "header": {
+            "type": "object",
+            "required": [
+              "name",
+              "tagline",
+              "website",
+              "logoUrl",
+              "links",
+              "callToAction"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The company name."
+              },
+              "tagline": {
+                "type": "string",
+                "description": "The tagline, or an empty string."
+              },
+              "website": {
+                "type": "string",
+                "description": "The company website, or an empty string."
+              },
+              "logoUrl": {
+                "type": "string",
+                "description": "The logo URL, or an empty string."
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NetworkProfileV2_recordField"
+                },
+                "description": "Links the company lists, label and value."
+              },
+              "callToAction": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NetworkProfileV2_recordField"
+                  }
+                ],
+                "description": "The call to action the page shows, or null."
+              }
+            },
+            "additionalProperties": false,
+            "description": "The page header: name, tagline, website, logo and links."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_recordSection"
+            },
+            "description": "Every section in page order."
+          }
+        },
+        "additionalProperties": false
+      },
+      "NetworkProfileV1": {
+        "type": "object",
+        "deprecated": true,
+        "description": "DEPRECATED. Contract 1 of the profile read, served only to a caller that pins it with ?contract=1 or the Trooth-Contract: 1 request header, together with Deprecation and Sunset response headers, until its withdrawal on 2027-03-01 (https://trooth.co/changelog). It promises one answer per question, which holds only where no two sources disagree, so it leaves out every contested fact and names each in withheldContested. A query the Network holds no profile for answers the contract 2 notFound body ({ found: false }) under either contract. Derived from lib/network/public-profile-v1.ts by scripts/gen-openapi.mjs.",
+        "required": [
+          "found",
+          "contractVersion",
+          "contractNote",
+          "contractOmissions",
+          "deprecation",
+          "slug",
+          "name",
+          "domain",
+          "canonicalUrl",
+          "tagline",
+          "industries",
+          "updatedAt",
+          "witnessed",
+          "methodology",
+          "facts",
+          "withheldContested"
+        ],
+        "properties": {
+          "contractVersion": {
+            "const": 1,
+            "description": "Always 1 in this body: contract 1 served it."
+          },
+          "contractNote": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What the contract version promises, as a sentence."
+          },
+          "contractOmissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "Fields this contract deliberately does not carry, each with the reason, so a reader does not look for them."
+          },
+          "deprecation": {
+            "type": "string",
+            "description": "The withdrawal notice. Contract 1 is withdrawn on 2027-03-01; the same date is in the Sunset response header."
+          },
+          "requestedContract": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "The contract the caller asked for with ?contract= or the Trooth-Contract header, or null when it asked for none. contractVersion is the contract that served the response. Additive in contract 2 (2026-09-26)."
+          },
+          "contractSchema": {
+            "type": "null",
+            "description": "Always null. Contract 1 has no published schema file; this definition is its schema."
+          },
+          "witnessStatement": {
+            "$ref": "#/components/schemas/NetworkProfileV2_witnessStatement",
+            "description": "The one signed object in this response. Absent (the key is not in the body) when the latest reading has no signed statement."
+          },
+          "witnessEvidenceManifest": {
+            "$ref": "#/components/schemas/NetworkProfileV2_witnessEvidenceManifest",
+            "description": "The evidence manifest the statement binds by digest. Present with a v2 statement."
+          },
+          "signing": {
+            "$ref": "#/components/schemas/NetworkProfileV2_signing",
+            "description": "What in this response is signed, and how to check it yourself."
+          },
+          "found": {
+            "const": true,
+            "description": "Always true in this branch: a published profile answers the query."
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "description": "The company's slug on the Network; send it as q to read the same record."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The company name as published."
+          },
+          "domain": {
+            "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+            "description": "The company's domain, or null when none is published."
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "pattern": "^https://trooth\\.co/network/company/[a-z0-9-]+$",
+            "description": "The company's public Trust Profile page, the human-readable form of this record."
+          },
+          "tagline": {
+            "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+            "description": "The company's one-line description, as the company wrote it, or null."
+          },
+          "industries": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Industries the company lists for itself."
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/NetworkProfileV2_nullableString",
+            "description": "When the company last published a change to this record. An ISO 8601 date-time in UTC, or null when none is recorded."
+          },
+          "witnessed": {
+            "$ref": "#/components/schemas/NetworkProfileV2_witnessBlock",
+            "description": "What Trooth itself observed about the public surface. See the witnessBlock definition."
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/NetworkProfileV2_methodology",
+            "description": "How readings are taken and kept, and what they do not cover."
+          },
+          "facts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV1_fact"
+            },
+            "description": "Every fact no two sources answered differently. A contested fact is left out, never resolved to one account, and its key is named in withheldContested."
+          },
+          "withheldContested": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The key of every fact left out of facts because two sources answered it differently. Read it with contract 2, which carries both accounts in conflicts."
+          }
+        }
+      },
+      "NetworkProfileV1_fact": {
+        "type": "object",
+        "required": [
+          "key",
+          "category",
+          "label",
+          "value",
+          "origin"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+\\.[a-z0-9-]+$",
+            "description": "The stable field key, section.field (for example identity.legal-name)."
+          },
+          "category": {
+            "type": "string",
+            "description": "The section the fact belongs to, as words."
+          },
+          "label": {
+            "type": "string",
+            "description": "The field name, as words."
+          },
+          "value": {
+            "type": "string",
+            "description": "The value as published, as text."
+          },
+          "origin": {
+            "$ref": "#/components/schemas/NetworkProfileV2_origin",
+            "description": "Who said it: company-declared, witnessed or public-source."
+          }
+        },
+        "description": "One fact as contract 1 carries it: the contract 2 fact without contested, claim or record."
       },
       "Error": {
         "type": "object",
@@ -1950,12 +2113,15 @@
           },
           "pillars": {
             "type": "array",
+            "description": "One entry per area, in the same shape on /api/public-mesh/{handle} and in every vendor of /api/compare (lib/public-pillars.ts).",
             "items": {
               "type": "object",
               "required": [
                 "id",
                 "label",
-                "status"
+                "status",
+                "observedAt",
+                "sourceRef"
               ],
               "properties": {
                 "id": {
@@ -1968,15 +2134,22 @@
                   "type": "string"
                 },
                 "restricted": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "description": "Present, and true, only when the area is held behind access controls. Restricted is not the same as not published."
                 },
                 "observedAt": {
-                  "type": "string",
-                  "description": "Added 2026-10-04. When Trooth last read this area, present only when the upstream states it for the area and the area is not restricted."
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Added 2026-10-04; always present since 2026-10-09. When Trooth last read this area, as the upstream states it for the area. null when no per-area read time is recorded or the area is restricted: an unrecorded date reads as unknown, never borrowed from another area, a provider's lastSync or company.updatedAt."
                 },
                 "sourceRef": {
-                  "type": "string",
-                  "description": "Added 2026-10-04. The upstream's reference to the reading behind this area, when it gives one."
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Added 2026-10-04; always present since 2026-10-09. The upstream's reference to the reading behind this area. null when it gives none or the area is restricted."
                 }
               }
             }
@@ -2518,7 +2691,7 @@
     "/api/mobile/directory/search": {
       "get": {
         "summary": "Search the Trooth Network",
-        "description": "Full-text search over published company listings. Returns the same companies the public directory shows. Prefer cursor pagination: pass the returned next_cursor back as cursor. Offset pagination still works and is kept for clients that already ship with it, but it is deprecated: it counts rows rather than naming a position, so a directory that grows between two requests can serve the same company twice and skip another without erroring. A response to an offset-paged request carries a Deprecation header and a Link header with rel=\"deprecation\"; no withdrawal date is set, so no Sunset header is sent. A cursor that cannot be read returns 400 rather than an empty page. Cached at the edge for 60 seconds with a 300 second stale-while-revalidate window. BEST-EFFORT, MUTABLE ENUMERATION: there is no snapshot. Every page reads the live directory, and the cursor names a position in the sort order, not a point in time; it is not bound to a snapshot, an as-of time or an expiry. A company whose witnessed state changes between two pages can be missed or returned twice, so a walk is not a consistent full export. Drop repeats by slug and walk again to reconcile. The fact pages of /api/network/profile are a different mechanism: their cursor is bound to one record version.",
+        "description": "Full-text search over published company listings. Returns the same companies the public directory shows. Prefer cursor pagination: pass the returned next_cursor back as cursor. Offset pagination still works and is kept for clients that already ship with it, but it is deprecated: it counts rows rather than naming a position, so a directory that grows between two requests can serve the same company twice and skip another without erroring. A response to an offset-paged request carries a Deprecation header and a Link header with rel=\"deprecation\"; no withdrawal date is set, so no Sunset header is sent. A cursor that cannot be read returns 400 rather than an empty page. Cached at the edge for 60 seconds with a 300 second stale-while-revalidate window. BEST-EFFORT, MUTABLE ENUMERATION: there is no snapshot. Every page reads the live directory, and the cursor names a position in the sort order, not a point in time; it is not bound to a snapshot, an as-of time or an expiry. A company whose witnessed state changes between two pages can be missed or returned twice, so a walk is not a consistent full export. Drop repeats by slug and walk again to reconcile. The fact pages of /api/network/profile are a different mechanism: their cursor is bound to one record version. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "parameters": [
           {
             "name": "q",
@@ -2616,7 +2789,7 @@
     "/api/mobile/directory/featured": {
       "get": {
         "summary": "Companies with a witnessed record",
-        "description": "The Trooth Network's front page: published companies, those with a witnessed record first. Cached at the edge for 120 seconds.",
+        "description": "The Trooth Network's front page: published companies, those with a witnessed record first. Cached at the edge for 120 seconds. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "operationId": "get_api_mobile_directory_featured",
         "security": [],
         "responses": {
@@ -2651,7 +2824,7 @@
     "/api/mobile/directory/vendor/{slug}": {
       "get": {
         "summary": "One company record",
-        "description": "A published company profile, and its live witnessed state where Trooth has witnessed the company. A slug of the form d--example.com resolves a witnessed company that has not yet published a rich profile. Cached at the edge for 120 seconds.",
+        "description": "A published company profile, and its live witnessed state where Trooth has witnessed the company. A slug of the form d--example.com resolves a witnessed company that has not yet published a rich profile. Cached at the edge for 120 seconds. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "parameters": [
           {
             "name": "slug",
@@ -2712,7 +2885,7 @@
     "/api/public-mesh/{handle}": {
       "get": {
         "summary": "A company's public evidence rollup",
-        "description": "The buyer-facing projection of a company's evidence: the witnessed state per area (the pillars key), provider status with the time each connected system was last read. Framework rollups were retired on 2026-09-26 and the frameworks array is always empty. Individual control rows, owners and internal notes are never returned here. Responds 404 when the company has no public record, which is a privacy-preserving answer rather than an error. Readable cross-origin (Access-Control-Allow-Origin: *); this is the read the embeddable badge performs. Cached at the edge for 300 seconds.",
+        "description": "The buyer-facing projection of a company's evidence: the witnessed state per area (the pillars key), provider status with the time each connected system was last read. Framework rollups were retired on 2026-09-26 and the frameworks array is always empty. Individual control rows, owners and internal notes are never returned here. Each pillar carries observedAt and sourceRef, null when Trooth holds no per-area read time or reference, or when the area is restricted: null reads as unknown and is never filled from another area, a provider sync or the company's last edit. Responds 404 when the company has no public record, which is a privacy-preserving answer rather than an error. This is the read the embeddable badge performs. Cached at the edge for 300 seconds. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "parameters": [
           {
             "name": "handle",
@@ -2773,7 +2946,7 @@
     "/api/network/profile": {
       "get": {
         "summary": "One company's canonical profile and witness facts",
-        "description": "The canonical published profile for a company, keyed by domain or slug, with the witness facts a buyer's tool needs: the `standing` field (the witnessed state), lastWitnessed (freshness), firstWitnessedAt and the unbroken run of Trooth's own hourly readings (continuity), and checksPassed out of checksRun on the signed result (coverage: checks that read as expected, out of checks run). Continuity is never claimed older than Trooth's own record and stays null until two consecutive readings agree. Responds { found: false } with 200 when no profile is published, 400 when q is missing. Cached at the edge for 120 seconds. Every response carries a `methodology` object stating the reading cadence, the gap tolerance that defines an unbroken series, the retention period, the per-category freshness windows, and an explicit list of coverage limits - what Trooth does not read. A caller restating `witnessed` or `updatedAt` elsewhere must carry those limits with it: neither field is a certification nor an audit opinion. Only the witness statement is signed; the profile, its facts and the company's text are not (see `signing`). `sectionCapabilities` links the section map, which says which sections this record and the other projections carry. Limited to 600 requests a minute and 20,000 an hour per client network (an IPv4 address, or an IPv6 /64), counted across server instances; over either window the answer is 429 with Retry-After set to the seconds until that window resets. If the counting store fails, each instance counts alone at the same ceilings and the read is not refused.",
+        "description": "The canonical published profile for a company, keyed by domain or slug, with the witness facts a buyer's tool needs: the `standing` field (the witnessed state), lastWitnessed (freshness), firstWitnessedAt and the unbroken run of Trooth's own hourly readings (continuity), and checksPassed out of checksRun on the signed result (coverage: checks that read as expected, out of checks run). Continuity is never claimed older than Trooth's own record and stays null until two consecutive readings agree. Responds { found: false } with 200 when no profile is published, 400 when q is missing. Cached at the edge for 120 seconds. Every response carries a `methodology` object stating the reading cadence, the gap tolerance that defines an unbroken series, the retention period, the per-category freshness windows, and an explicit list of coverage limits - what Trooth does not read. A caller restating `witnessed` or `updatedAt` elsewhere must carry those limits with it: neither field is a certification nor an audit opinion. Only the witness statement is signed; the profile, its facts and the company's text are not (see `signing`). `sectionCapabilities` links the section map, which says which sections this record and the other projections carry. Limited to 600 requests a minute and 20,000 an hour per client network (an IPv4 address, or an IPv6 /64), counted across server instances; over either window the answer is 429 with Retry-After set to the seconds until that window resets. If the counting store fails, each instance counts alone at the same ceilings and the read is not refused. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "parameters": [
           {
             "name": "q",
@@ -2825,11 +2998,49 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "The record, or { found: false } when the Network holds none. The body is written to a published JSON Schema and validated against it on every push and after every deployment.",
+            "description": "The record, or { found: false } when the Network holds none. Which body is served is keyed by the Trooth-Contract response header: 2 (the default) is NetworkProfileV2, written to the published JSON Schema https://trooth.co/schemas/network-profile.v2.schema.json and validated against it on every push and after every deployment; 1 is NetworkProfileV1, deprecated, served only to a caller that pinned contract 1, with Deprecation and Sunset headers, until its withdrawal on 2027-03-01.",
+            "headers": {
+              "Trooth-Contract": {
+                "description": "The contract that served this body: 2, or 1 for a caller that pinned it.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1",
+                    "2"
+                  ]
+                }
+              },
+              "Deprecation": {
+                "description": "Sent only with contract 1 (RFC 9745): contract 1 is deprecated.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Sunset": {
+                "description": "Sent only with contract 1 (RFC 8594): the date contract 1 is withdrawn, 2027-03-01, as an HTTP date.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "A weak tag of this representation; send it back in If-None-Match for a 304.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/NetworkProfileV2"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/NetworkProfileV2"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NetworkProfileV1"
+                    }
+                  ],
+                  "description": "NetworkProfileV2 when Trooth-Contract is 2, NetworkProfileV1 when it is 1. The two never both match: contract 1 carries contractVersion 1 and no conflicts."
                 }
               }
             }
@@ -2885,13 +3096,13 @@
     "/api/compare": {
       "get": {
         "summary": "Compare companies side by side",
-        "description": "A comparison of published witnessed facts across up to four companies. Control rows are stripped, so a company's internal posture is never exposed through the comparison. `comparison` is the table a person sees on /compare, decided by the same module: every cell carries one of the states in `states`, the legend the page prints. A parameter at.<handle>=<n> reads that company at stored record version n, as a dated comparison link does. Rate limited.",
+        "description": "A comparison of published witnessed facts across up to four companies. Control rows are stripped, so a company's internal posture is never exposed through the comparison. `comparison` is the table a person sees on /compare, decided by the same module: every cell carries one of the states in `states`, the legend the page prints. A parameter at.<handle>=<n> reads that company at stored record version n, as a dated comparison link does. Handles are compared case-insensitively and a handle named twice is read once; the first four distinct handles are read and any beyond them are ignored. A request that names no handle and no snapshot is refused with 400 (missing_parameter) rather than answered with an empty comparison. Each vendor's pillars have the same shape GET /api/public-mesh/{handle} sends, observedAt and sourceRef included, null when unknown. Rate limited. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "parameters": [
           {
             "name": "handles",
             "in": "query",
             "required": false,
-            "description": "Comma-separated company handles. Required unless snapshot is given.",
+            "description": "Comma-separated company handles, one to four distinct, for example trooth,egnyte. Required unless snapshot is given; a request with neither is refused with 400.",
             "schema": {
               "type": "string"
             }
@@ -2915,6 +3126,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Comparison"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither handles nor snapshot names anything to compare (code missing_parameter; the legacy body's error is missing_handles). Nothing was looked up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2985,7 +3211,7 @@
     "/api/network/suggest": {
       "get": {
         "summary": "Typeahead over published companies",
-        "description": "Name-to-company suggestions for a search box, over the same published listings the directory shows. Cached at the edge for 60 seconds.",
+        "description": "Name-to-company suggestions for a search box, over the same published listings the directory shows. Cached at the edge for 60 seconds. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "parameters": [
           {
             "name": "q",
@@ -3016,7 +3242,7 @@
     "/api/legal/{slug}": {
       "get": {
         "summary": "A published legal document",
-        "description": "The full text of one of the twenty published Trooth legal documents, with its title, effective date and body. The slug must be one of the published set; anything else responds 404. Cached at the edge for one hour with a one day stale-while-revalidate window.",
+        "description": "The full text of one of the twenty published Trooth legal documents, with its title, effective date and body. The slug must be one of the published set; anything else responds 404. Cached at the edge for one hour with a one day stale-while-revalidate window. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "parameters": [
           {
             "name": "slug",
@@ -3062,7 +3288,7 @@
     "/api/version": {
       "get": {
         "summary": "The deployment currently serving",
-        "description": "The build stamp of the running deployment. Never cached. Useful for confirming which release answered a request.",
+        "description": "The build stamp of the running deployment. Never cached. Useful for confirming which release answered a request. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "operationId": "get_api_version",
         "security": [],
         "responses": {
