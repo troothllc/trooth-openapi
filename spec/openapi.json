@@ -8,7 +8,7 @@
     "contact": {
       "name": "Trooth developer support",
       "email": "developers@trooth.co",
-      "url": "https://trooth.co/developers"
+      "url": "https://trooth.co/docs/api"
     },
     "license": {
       "name": "Terms of Service",
@@ -1892,7 +1892,7 @@
           "type": {
             "type": "string",
             "format": "uri",
-            "description": "Stable per code; resolves to the code's entry at https://trooth.co/developers#problem-<code>."
+            "description": "Stable per code; resolves to the code's entry at https://trooth.co/docs/api#problem-<code>."
           },
           "title": {
             "type": "string",
@@ -1911,7 +1911,7 @@
           },
           "code": {
             "type": "string",
-            "description": "The stable machine code, one of those listed at https://trooth.co/developers#errors."
+            "description": "The stable machine code, one of those listed at https://trooth.co/docs/api#errors."
           },
           "request_id": {
             "type": "string",
