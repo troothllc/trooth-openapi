@@ -2,9 +2,13 @@
 
 The OpenAPI 3.1 contracts for Trooth's two public hosts, trooth.co and api.trooth.co.
 
+[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-0B0B0B)](https://trooth.co/openapi.json) [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-0B0B0B)](LICENSE) [![Docs](https://img.shields.io/badge/docs-trooth.co%2Fdocs%2Fapi-0B0B0B)](https://trooth.co/docs/api)
+
 Trooth operates the Trooth Network: one public, signed, machine-readable record per company, carrying its identity, products and demos, commercial terms, domain and marketing links, people, documents, security and privacy posture, AI practices, procurement terms and relationships. It is Trooth's only product and it is free.
 
 DNS says where a company is. A TLS certificate says the connection is authentic. The Trooth Network says who the company is and what it does with your data.
+
+> **Is your company on the Trooth Network?** Any company can publish one free, public record that buyers, and the AI assistants they use, read directly. **[Claim your company's record](https://trooth.co/signup)** · [See an example](https://trooth.co/network/company/trooth)
 
 **Trooth witnesses and dates facts. It does not grade, rate or rank anyone.**
 
