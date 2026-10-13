@@ -4,7 +4,7 @@
     "title": "Trooth Public API",
     "version": "1.1.0",
     "summary": "The read-only public surface of the Trooth Network.",
-    "description": "Everything here answers a question about a software or AI company from published\nevidence, and needs no credential. It is the surface a person, an integrator or an\nauthorized agent may build on.\n\nWHAT IS DELIBERATELY ABSENT. Authentication flows are not documented: they are\nbrowser redirects in a login sequence, not an API. Unauthenticated endpoints that\nsend mail or start work are rate limited and undocumented on purpose. Every\nsession-authenticated endpoint is absent because publishing an internal route map\nhelps an attacker and promises an API that is not offered.\n\nEVIDENCE VOCABULARY. Responses distinguish witnessed, public record (wire value\n`verified`), declared, inferred, unknown, not applicable, restricted, unavailable,\nstale and conflicting. Unknown is an answer, never a blank\nfilled in, and stale is never the same as wrong. No response carries a figure, a\nrank or a grade for a company: the witness facts are coverage (checks that read as\nexpected, out of checks run), freshness (last read), continuity (unbroken since) and change.\n\nA 404 from these endpoints usually means the Network holds no record, which is an\nanswer rather than a failure.\n\nCROSS-ORIGIN. Every operation here is readable from a browser on any site: responses\ncarry Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so\nno cookie is sent or honored. A browser's OPTIONS check before a request that sends\nthe Trooth-Contract, Trooth-Version or If-None-Match header is answered.\n\nTHE OTHER HOST. These are the routes trooth.co serves. api.trooth.co is a separate\nservice with its own contract, https://trooth.co/openapi.yaml, and that document is\nthe canonical schema for GET https://api.trooth.co/public/trust/{slug}\n(PublicTrustProfile), for GET https://api.trooth.co/public/keys and for the badge\nimage. Its authenticated routes take a DPoP-bound credential (RFC 9449), described\nthere and at https://trooth.co/docs/api#authorization. The service applies no rate\nlimit to the profile read. Its MCP server\nat https://api.trooth.co/public/mcp allows 120 tools/call requests a minute per IP\naddress, counted per server instance, and answers 429 with Retry-After: 60 over it.\n\nGenerated from app/api by scripts/gen-openapi.mjs. check:openapi fails the build\nwhen this document and the source disagree.",
+    "description": "Everything here answers a question about a software or AI company from published\nevidence, and needs no credential. It is the surface a person, an integrator or an\nauthorized agent may build on.\n\nWHAT IS DELIBERATELY ABSENT. Authentication flows are not documented: they are\nbrowser redirects in a login sequence, not an API. Unauthenticated endpoints that\nsend mail or start work are rate limited and undocumented on purpose. Every\nsession-authenticated endpoint is absent because publishing an internal route map\nhelps an attacker and promises an API that is not offered.\n\nEVIDENCE VOCABULARY. Responses distinguish witnessed, public record (wire value\n`verified`), declared, inferred, unknown, not applicable, restricted, unavailable,\nstale and conflicting. Unknown is an answer, never a blank\nfilled in, and stale is never the same as wrong. No response carries a figure, a\nrank or a grade for a company: the witness facts are coverage (checks that read as\nexpected, out of checks run), freshness (last read), continuity (unbroken since) and change.\n\nA 404 from these endpoints usually means the Network holds no record, which is an\nanswer rather than a failure.\n\nCROSS-ORIGIN. Every operation here is readable from a browser on any site: responses\ncarry Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so\nno cookie is sent or honored. A browser's OPTIONS check before a request that sends\nthe Trooth-Contract, Trooth-Version or If-None-Match header is answered.\n\nTHE OTHER HOST. These are the routes trooth.co serves. api.trooth.co is a separate\nservice with its own contract, https://trooth.co/openapi.yaml, and that document is\nthe canonical schema for GET https://api.trooth.co/public/trust/{slug}\n(PublicTrustProfile), for GET https://api.trooth.co/public/keys and for the badge\nimage. Its authenticated routes take a DPoP-bound credential (RFC 9449), described\nthere and at https://trooth.co/docs/api#authorization. The service applies no rate\nlimit to the profile read. Its MCP server at https://api.trooth.co/public/mcp\nmeters tools/call at 300 units every 60 seconds per caller (the OAuth\nsubject when a valid token is presented, otherwise the IP address), counted in one\nstore shared by every server instance; each tool call costs 1 to 4 units, as\nhttps://trooth.co/.well-known/mcp.json lists. Over it: 429 with Retry-After giving the seconds\nuntil units free up.\n\nGenerated from app/api by scripts/gen-openapi.mjs. check:openapi fails the build\nwhen this document and the source disagree.",
     "contact": {
       "name": "Trooth developer support",
       "email": "developers@trooth.co",
@@ -230,6 +230,33 @@
             "$ref": "#/components/schemas/NetworkProfileV2_methodology",
             "description": "How readings are taken and kept, and what they do not cover."
           },
+          "assuranceBoundary": {
+            "type": "object",
+            "description": "Added 2026-10-12 (audit F-04). What this record does and does not establish. The statement is the same sentence the profile page, badge, comparison, exports and MCP answers carry.",
+            "required": [
+              "statement",
+              "doesNotEstablish",
+              "methodology"
+            ],
+            "properties": {
+              "statement": {
+                "const": "This record organizes source-linked information for a security review. It is not an audit, certification, or suitability decision.",
+                "description": "The boundary in one sentence, word for word the sentence every Trooth surface carries."
+              },
+              "doesNotEstablish": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "What a Trooth record does not establish, one item each."
+              },
+              "methodology": {
+                "type": "string",
+                "description": "Where the method is described: https://trooth.co/methodology."
+              }
+            }
+          },
           "facts": {
             "type": "array",
             "items": {
@@ -345,6 +372,168 @@
                     "description": "The person who attested at claim time that they may act for the company, or null when no attestation is recorded. An attestation is the person's own statement; Trooth does not collect evidence of corporate authority."
                   }
                 }
+              }
+            }
+          },
+          "legalEntity": {
+            "type": "object",
+            "description": "Added 2026-10-12 (audit F-05). The legal entity the company declared behind this domain: name, jurisdiction, registration identifier, register, its relationship to the domain and the evidence the company cites. Always company_declared and not_validated: Trooth has no registry connector and no authority-confirmation workflow, so nothing here carries a validated label, and domain control does not establish any of it.",
+            "required": [
+              "state",
+              "entityName",
+              "jurisdiction",
+              "registrationId",
+              "relationshipToDomain",
+              "evidenceRef",
+              "provenance",
+              "declaredAt"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "declared",
+                  "not_registered",
+                  "not_declared"
+                ],
+                "description": "declared when the company named an entity or a relationship; not_registered when it said it has no registration; not_declared when nothing is published."
+              },
+              "entityName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The legal name the company published, or null."
+              },
+              "jurisdiction": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Where the company says the entity is registered, or null."
+              },
+              "registrationId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The registration number as the company typed it, or null."
+              },
+              "register": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The register the company names, e.g. Companies House, or null."
+              },
+              "registerRecordUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The register's own record as the company linked it, or null."
+              },
+              "relationshipToDomain": {
+                "enum": [
+                  "operator",
+                  "parent",
+                  "subsidiary",
+                  "reseller",
+                  "shared_domain",
+                  null
+                ],
+                "description": "Which case the entity is with respect to this domain, as the company declared it, or null when unstated."
+              },
+              "relationshipLabel": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The reader's words for relationshipToDomain, or null."
+              },
+              "evidenceRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "A link the company supplied. Trooth has not read or validated it."
+              },
+              "otherEntities": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "legalName"
+                  ],
+                  "properties": {
+                    "legalName": {
+                      "type": "string",
+                      "description": "The entity's legal name, as declared."
+                    },
+                    "jurisdiction": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Its jurisdiction, as declared, or null."
+                    },
+                    "registrationId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Its registration number, as declared, or null."
+                    },
+                    "role": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Its role in the group (parent, operating, subsidiary, branch_of), as declared, or null."
+                    }
+                  }
+                },
+                "description": "Other entities the company declared in its group structure."
+              },
+              "provenance": {
+                "type": "object",
+                "required": [
+                  "source",
+                  "validation"
+                ],
+                "properties": {
+                  "source": {
+                    "const": "company_declared",
+                    "description": "Always company_declared."
+                  },
+                  "validation": {
+                    "const": "not_validated",
+                    "description": "Always not_validated: no independent validation exists today."
+                  },
+                  "validatedBy": {
+                    "type": "null",
+                    "description": "Null: nobody validated it."
+                  },
+                  "validatedAt": {
+                    "type": "null",
+                    "description": "Null: nobody validated it."
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "The provenance in one sentence."
+                  }
+                },
+                "description": "Who said it and whether anyone checked: always company_declared and not_validated today."
+              },
+              "declaredAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Server time of the publish that declared the values shown, or null for a record published before declarations were kept. Never the time of the read."
+              },
+              "registryMatch": {
+                "type": "string",
+                "description": "What Trooth checks against a register: the authority model's registryMatch sentence."
               }
             }
           },
@@ -1763,6 +1952,33 @@
           "signing": {
             "$ref": "#/components/schemas/NetworkProfileV2_signing",
             "description": "What in this response is signed, and how to check it yourself."
+          },
+          "assuranceBoundary": {
+            "type": "object",
+            "description": "Added 2026-10-12 (audit F-04). What this record does and does not establish. The statement is the same sentence the profile page, badge, comparison, exports and MCP answers carry.",
+            "required": [
+              "statement",
+              "doesNotEstablish",
+              "methodology"
+            ],
+            "properties": {
+              "statement": {
+                "const": "This record organizes source-linked information for a security review. It is not an audit, certification, or suitability decision.",
+                "description": "The boundary in one sentence, word for word the sentence every Trooth surface carries."
+              },
+              "doesNotEstablish": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "What a Trooth record does not establish, one item each."
+              },
+              "methodology": {
+                "type": "string",
+                "description": "Where the method is described: https://trooth.co/methodology."
+              }
+            }
           },
           "found": {
             "const": true,
