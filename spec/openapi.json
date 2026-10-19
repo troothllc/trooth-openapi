@@ -232,7 +232,7 @@
           },
           "assuranceBoundary": {
             "type": "object",
-            "description": "Added 2026-10-12 (audit F-04). What this record does and does not establish. The statement is the same sentence the profile page, badge, comparison, exports and MCP answers carry.",
+            "description": "Added 2026-10-12 (audit F-04). What this record does and does not establish. The statement is the same sentence the profile page, badge, exports and MCP answers carry.",
             "required": [
               "statement",
               "doesNotEstablish",
@@ -537,6 +537,29 @@
               }
             }
           },
+          "trustCenter": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Added 2026-10-16. The trust center page the company stated on its published profile, where it publishes its security and compliance documents (for example on SafeBase, Vanta, Drata, Conveyor, Whistic, TrustArc, Secureframe or OneTrust, or its own /trust page), or null when it stated none. The company's statement, not Trooth's finding: statedBy is always company. Trooth reads this page at each witnessed reading and records what the page named in the public record (trust_center), labeled as what the page said; Trooth does not read the documents behind it or check its claims.",
+            "required": [
+              "url",
+              "statedBy"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The trust center link as the company stated it: an https URL of at most 500 characters, on any host. Under a links restriction it is replaced with a withheld marker like every other outbound link."
+              },
+              "statedBy": {
+                "const": "company",
+                "description": "Who stated the link. Always the company."
+              }
+            }
+          },
           "relationships": {
             "type": "object",
             "description": "What a listed relationship does and does not establish. Additive in contract 2 (2026-09-26)."
@@ -661,6 +684,279 @@
           "profile": {
             "$ref": "#/components/schemas/NetworkProfileV2_companyRecord",
             "description": "The complete record in the order of the public page: every section with its state, provenance and meaning."
+          },
+          "identity": {
+            "type": "object",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). Who this record is about.",
+            "required": [
+              "legal_name",
+              "domain",
+              "registry_identifier",
+              "canonical_url",
+              "note"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "legal_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The legal name the company published, or null."
+              },
+              "domain": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The domain this record is keyed by, or null."
+              },
+              "registry_identifier": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The registration identifier the company published, or null."
+              },
+              "canonical_url": {
+                "type": "string",
+                "description": "The canonical profile page."
+              },
+              "note": {
+                "const": "This record is keyed by domain. It is about the company at this domain, not about similarly named companies.",
+                "description": "The fixed note: the record is keyed by domain."
+              }
+            }
+          },
+          "record_summary": {
+            "type": "object",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The record at a glance.",
+            "required": [
+              "record_version",
+              "last_witnessed_at",
+              "counts_by_provenance",
+              "sections_not_published",
+              "sections_on_request",
+              "checks_read",
+              "checks_as_expected",
+              "failed_checks",
+              "verify_command"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "record_version": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "The stored record version this body is, or null when it is not known on this load."
+              },
+              "last_witnessed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "When Trooth last witnessed the company, ISO 8601 with time zone, or null."
+              },
+              "counts_by_provenance": {
+                "type": "object",
+                "required": [
+                  "witnessed",
+                  "public_record",
+                  "attested",
+                  "declared"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "witnessed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Facts Trooth witnessed."
+                  },
+                  "public_record": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Facts read from a public record."
+                  },
+                  "attested": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Facts a named counterparty stated."
+                  },
+                  "declared": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Facts the company declared."
+                  }
+                },
+                "description": "Published facts counted by provenance word; never added together into one figure."
+              },
+              "sections_not_published": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Section ids not published (including sections the company hid)."
+              },
+              "sections_on_request": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Section ids available on request only."
+              },
+              "checks_read": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Checks the latest signed witness statement read, or null without one."
+              },
+              "checks_as_expected": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Of those, the checks whose outcome was as expected, or null."
+              },
+              "failed_checks": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NetworkProfileV2_failedCheck"
+                },
+                "description": "Every check the latest statement read as not as expected."
+              },
+              "verify_command": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The command that checks the signed witness statement on the reader's own machine."
+              }
+            }
+          },
+          "buyer_questions": {
+            "type": "array",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The twelve standard buyer questions, in the contract's order, answered only from the record's own fields.",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "question",
+                "answer_state",
+                "answer",
+                "sentence",
+                "provenance",
+                "as_of",
+                "anchor_url",
+                "fact_ids"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "q_ai_training",
+                    "q_ai_providers",
+                    "q_data_location",
+                    "q_subprocessors",
+                    "q_certifications",
+                    "q_mfa_sso",
+                    "q_encryption",
+                    "q_incidents",
+                    "q_termination_export",
+                    "q_price",
+                    "q_contracting_terms",
+                    "q_security_contact"
+                  ],
+                  "description": "The question id."
+                },
+                "question": {
+                  "type": "string",
+                  "description": "The question, in the contract's words."
+                },
+                "answer_state": {
+                  "$ref": "#/components/schemas/NetworkProfileV2_answerState",
+                  "description": "answered, no, not_published or not_read; the three negatives are never shown as one another."
+                },
+                "answer": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Null when answer_state is not_published or not_read."
+                },
+                "sentence": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "One self-contained sentence carrying subject, provenance, date and value; null when not answered."
+                },
+                "provenance": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/NetworkProfileV2_provenanceWord"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The provenance word of the answer, or null."
+                },
+                "as_of": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The newest declaration time behind the answer, else the published version time; null when not answered."
+                },
+                "anchor_url": {
+                  "type": "string",
+                  "description": "The anchor on the canonical page."
+                },
+                "fact_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The fact ids the answer is read from."
+                }
+              }
+            }
+          },
+          "controls_not_in_place": {
+            "type": "array",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). Controls not yet in place, read from the company's Trust Center control register where Trooth holds it as data; empty with controls_not_in_place_state not_published otherwise.",
+            "items": {
+              "type": "object",
+              "required": [
+                "control",
+                "status_note",
+                "source_url"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "control": {
+                  "type": "string",
+                  "description": "The control, as the register names it."
+                },
+                "status_note": {
+                  "type": "string",
+                  "description": "Its state in the register's own words, with its target date or trigger."
+                },
+                "source_url": {
+                  "type": "string",
+                  "description": "The register page it is read from."
+                }
+              }
+            }
+          },
+          "controls_not_in_place_state": {
+            "enum": [
+              "published",
+              "not_published"
+            ],
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). published: the list is read from the company's own Trust Center register. not_published: no register is held for this company, so an empty list says nothing about its controls."
           }
         },
         "not": {
@@ -1370,6 +1666,48 @@
                 "description": "Record fields Trooth does not know for this fact, each with the reason."
               }
             }
+          },
+          "fact_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The stable fact id, <section>.<field>: the section name the .md, JSON and MCP surfaces share and the field's key in lower snake case; a list member adds .member.<member key>. Never contains the record version."
+          },
+          "anchor_url": {
+            "type": "string",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The fact's anchor on the canonical page: #fact-<fact_id with . written as ->."
+          },
+          "sentence": {
+            "type": "string",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). One self-contained sentence: subject, provenance, date and value."
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/NetworkProfileV2_provenanceWord",
+            "description": "The fact's provenance word."
+          },
+          "freshness_window": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The methodology's freshness window for this fact as an ISO 8601 duration (P30D), or null when no window applies (a company statement Trooth does not re-read)."
+          },
+          "stale_after": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). When the fact's dated observation goes stale, ISO 8601 with time zone, or null."
+          },
+          "witnessed_value": {
+            "$ref": "#/components/schemas/NetworkProfileV2_witnessedValue",
+            "description": "Trooth's own observation of the same claim, beside the declaration, or null."
+          },
+          "edit_history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_editRecord"
+            },
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). Declared facts only: the changes to this fact across the newest stored record versions (at most 25 versions), oldest first. Empty when none is held."
           }
         }
       },
@@ -1596,7 +1934,7 @@
             "items": {
               "$ref": "#/components/schemas/NetworkProfileV2_recordField"
             },
-            "description": "The item fields, label and value."
+            "description": "The item fields, label and value. In the security section, an item under reported certifications and assessments may carry two digests the company stated for documents it holds privately: SHA-256 of the report and SHA-256 of the auditor's statement, each 64 lowercase hex characters, labeled as stated by the company. A reader who receives the document under a non-disclosure agreement (NDA) hashes it and checks the result against the published digest. Trooth has not read the document and has not checked the digest. An item under \"Attestation result (published by the company)\" in the security section is a confidential-computing attestation result the company published: Platform, What runs in it, Verifier (named by the company), Appraised (an ISO date) and SHA-256 of the result (stated by the company), with the note that Trooth has not appraised the hardware evidence and has not checked the signature."
           },
           "notes": {
             "type": "array",
@@ -1610,7 +1948,7 @@
             "items": {
               "$ref": "#/components/schemas/NetworkProfileV2_recordField"
             },
-            "description": "Links the item carries, label and value."
+            "description": "Links the item carries, label and value. In the security section, an item under reported certifications and assessments may carry the auditor's signed statement as a link, beside the issuer's register entry and the report link. An item under \"Attestation result (published by the company)\" carries the signed result (for example an Entity Attestation Token or a signed report) as an https link under that label."
           },
           "data": {
             "type": "object",
@@ -1703,7 +2041,7 @@
           },
           "meaning": {
             "type": "string",
-            "description": "What an agent should say about this section, in one or two sentences."
+            "description": "The section's guidance from the one shared template, keyed on its state and provenance (identical for every company, not editable by companies), in one or two sentences."
           },
           "fields": {
             "type": "array",
@@ -1725,6 +2063,34 @@
               "type": "string"
             },
             "description": "Notes the record attaches to the section."
+          },
+          "section_state": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "published",
+              "not_published",
+              "on_request",
+              null
+            ],
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). published, not_published (also for a section the company hid) or on_request. Null for a section that could not be read on this load (state unavailable)."
+          },
+          "last_changed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The newest declaration or edit time of a fact printed in this section (for the evidence section, the last witnessed time), ISO 8601 with time zone; null when no value in it carries a recorded time."
+          },
+          "anchor_url": {
+            "type": "string",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The section's anchor on the canonical page (#<section id>)."
+          },
+          "guidance": {
+            "type": "string",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The section's guidance from the one shared template, keyed on state and provenance; identical for every company and not editable by companies. The same text as meaning."
           }
         },
         "additionalProperties": false
@@ -1882,6 +2248,126 @@
         },
         "additionalProperties": false
       },
+      "NetworkProfileV2_answerState": {
+        "enum": [
+          "answered",
+          "no",
+          "not_published",
+          "not_read"
+        ],
+        "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). answered: the record holds an answer. no: the record holds a negative value (declared or witnessed). not_published: the company has not published this on its record. not_read: Trooth's reading did not read this check or source. The three negatives are never shown as one another."
+      },
+      "NetworkProfileV2_provenanceWord": {
+        "enum": [
+          "witnessed",
+          "public_record",
+          "attested",
+          "declared"
+        ],
+        "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). witnessed: Trooth observed it (only the witness statement is signed). public_record: read from a public registry. attested: a named counterparty stated it. declared: the company stated it."
+      },
+      "NetworkProfileV2_witnessedValue": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). Trooth's own observation of the same claim, from a reading the record already holds (the signed witness statement's checks, or the public record reading's security.txt), printed beside the company's declaration and never in place of it. Null when no reading observed it.",
+        "required": [
+          "value",
+          "observed_at",
+          "check"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "What the reading recorded, in its own terms (check title and outcome, or the security.txt contacts read)."
+          },
+          "observed_at": {
+            "type": "string",
+            "description": "When the reading was taken, ISO 8601 with time zone."
+          },
+          "check": {
+            "type": "string",
+            "description": "The check id or ids (for example S2), or public_record.security_txt."
+          }
+        }
+      },
+      "NetworkProfileV2_editRecord": {
+        "type": "object",
+        "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). One change to a declared fact, from two consecutive stored record versions.",
+        "required": [
+          "fact_id",
+          "old_value",
+          "new_value",
+          "changed_at",
+          "actor_role",
+          "record_version"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "fact_id": {
+            "type": "string",
+            "description": "The fact id."
+          },
+          "old_value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The value before, or null when the fact was first published in this version."
+          },
+          "new_value": {
+            "type": "string",
+            "description": "The value after."
+          },
+          "changed_at": {
+            "type": "string",
+            "description": "The declaration time the newer version recorded for this value, else the time the version was recorded. ISO 8601 with time zone."
+          },
+          "actor_role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The declaring role the newer version recorded (owner, admin, editor), never a name or an email; null when none was recorded."
+          },
+          "record_version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The stored record version that carries the new value."
+          }
+        }
+      },
+      "NetworkProfileV2_failedCheck": {
+        "type": "object",
+        "required": [
+          "check",
+          "expected",
+          "observed",
+          "read_at"
+        ],
+        "additionalProperties": false,
+        "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). A check the latest witness statement read as not as expected, named from the statement and the check mapping it binds.",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "The check, by id and published title."
+          },
+          "expected": {
+            "type": "string",
+            "description": "What the check expects, in its published title."
+          },
+          "observed": {
+            "type": "string",
+            "description": "What the reading observed, from the statement's reason code and source."
+          },
+          "read_at": {
+            "type": "string",
+            "description": "When the reading was taken."
+          }
+        }
+      },
       "NetworkProfileV1": {
         "type": "object",
         "deprecated": true,
@@ -1955,7 +2441,7 @@
           },
           "assuranceBoundary": {
             "type": "object",
-            "description": "Added 2026-10-12 (audit F-04). What this record does and does not establish. The statement is the same sentence the profile page, badge, comparison, exports and MCP answers carry.",
+            "description": "Added 2026-10-12 (audit F-04). What this record does and does not establish. The statement is the same sentence the profile page, badge, exports and MCP answers carry.",
             "required": [
               "statement",
               "doesNotEstablish",
@@ -2072,9 +2558,1086 @@
           "origin": {
             "$ref": "#/components/schemas/NetworkProfileV2_origin",
             "description": "Who said it: company-declared, witnessed or public-source."
+          },
+          "fact_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The stable fact id, <section>.<field>: the section name the .md, JSON and MCP surfaces share and the field's key in lower snake case; a list member adds .member.<member key>. Never contains the record version."
+          },
+          "anchor_url": {
+            "type": "string",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The fact's anchor on the canonical page: #fact-<fact_id with . written as ->."
+          },
+          "sentence": {
+            "type": "string",
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). One self-contained sentence: subject, provenance, date and value."
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/NetworkProfileV2_provenanceWord",
+            "description": "The fact's provenance word."
+          },
+          "freshness_window": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). The methodology's freshness window for this fact as an ISO 8601 duration (P30D), or null when no window applies (a company statement Trooth does not re-read)."
+          },
+          "stale_after": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). When the fact's dated observation goes stale, ISO 8601 with time zone, or null."
+          },
+          "witnessed_value": {
+            "$ref": "#/components/schemas/NetworkProfileV2_witnessedValue",
+            "description": "Trooth's own observation of the same claim, beside the declaration, or null."
+          },
+          "edit_history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkProfileV2_editRecord"
+            },
+            "description": "Added 2026-10-16 (record contract, https://trooth.co/methodology#record-reading). Declared facts only: the changes to this fact across the newest stored record versions (at most 25 versions), oldest first. Empty when none is held."
           }
         },
         "description": "One fact as contract 1 carries it: the contract 2 fact without contested, claim or record."
+      },
+      "NetworkSearch": {
+        "title": "Trooth Network discovery response, version 1",
+        "description": "A page of matching companies. Canonical JSON Schema: https://trooth.co/schemas/network-search.v1.schema.json; embedded here with its $defs as NetworkSearch_* components.",
+        "type": "object",
+        "required": [
+          "format",
+          "results",
+          "total",
+          "next_cursor",
+          "partial",
+          "order",
+          "how_to_read",
+          "consistency"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "const": "trooth.network-search.v1",
+            "description": "Names this shape."
+          },
+          "results": {
+            "type": "array",
+            "description": "The companies on this page.",
+            "items": {
+              "$ref": "#/components/schemas/NetworkSearch_result"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "How many companies match, across all pages, on this read.",
+            "minimum": 0
+          },
+          "next_cursor": {
+            "description": "Send as cursor, with the same filters, for the next page; null at the end.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          },
+          "partial": {
+            "description": "Set when this answer covers part of the directory; null when it is whole.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "description": "Present when the read stopped at its ceiling.",
+                "required": [
+                  "shown",
+                  "total"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "shown": {
+                    "type": "integer",
+                    "description": "Profiles read.",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "description": "Published profiles in all, or null when the count could not be taken.",
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "integer",
+                        "description": "Published profiles in all.",
+                        "minimum": 0
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "order": {
+            "type": "string",
+            "description": "The ordering rule, in words."
+          },
+          "how_to_read": {
+            "type": "string",
+            "description": "How to read this answer."
+          },
+          "consistency": {
+            "type": "object",
+            "description": "What a walk of this list promises and does not.",
+            "required": [
+              "mode",
+              "completeEnumeration",
+              "note",
+              "cursorScope"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "const": "best-effort",
+                "description": "Pages read the live directory; there is no snapshot."
+              },
+              "completeEnumeration": {
+                "const": false,
+                "description": "A walk is not a consistent full export."
+              },
+              "note": {
+                "type": "string",
+                "description": "The guarantee, in words."
+              },
+              "cursorScope": {
+                "type": "string",
+                "description": "What a cursor is bound to."
+              }
+            }
+          }
+        }
+      },
+      "NetworkSearch_result": {
+        "type": "object",
+        "description": "One company, as its published page shows it.",
+        "required": [
+          "slug",
+          "domain",
+          "name",
+          "record_url",
+          "profile_url",
+          "witnessed",
+          "last_witnessed_at",
+          "profile_updated_at",
+          "industries",
+          "products",
+          "country",
+          "residency",
+          "hosting",
+          "facts"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "slug": {
+            "description": "The published profile's slug, or null for a witnessed company with no profile.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "Profile slug."
+              }
+            ]
+          },
+          "domain": {
+            "description": "The company's domain, or null.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "Domain."
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The company's name as it publishes it."
+          },
+          "record_url": {
+            "description": "The full machine record, GET /api/network/profile.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "URL."
+              }
+            ]
+          },
+          "profile_url": {
+            "description": "The company's page on trooth.co.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "URL."
+              }
+            ]
+          },
+          "witnessed": {
+            "type": "boolean",
+            "description": "True when the company is in Trooth's live witnessed feed. A statement about whether evidence exists, not about the company."
+          },
+          "last_witnessed_at": {
+            "description": "When Trooth last witnessed the company, or null.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "ISO 8601 time."
+              }
+            ]
+          },
+          "profile_updated_at": {
+            "description": "When the published profile last changed, or null.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "ISO 8601 time."
+              }
+            ]
+          },
+          "industries": {
+            "type": "array",
+            "description": "Industries the company published.",
+            "items": {
+              "type": "string",
+              "description": "An industry."
+            }
+          },
+          "products": {
+            "type": "array",
+            "description": "Product names from the company's visible offering section.",
+            "items": {
+              "type": "string",
+              "description": "A product name."
+            }
+          },
+          "country": {
+            "description": "The HQ country the company published, or null.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "Country."
+              }
+            ]
+          },
+          "residency": {
+            "type": "array",
+            "description": "Data residency regions the company published, when its page shows them.",
+            "items": {
+              "type": "string",
+              "description": "A region, as written."
+            }
+          },
+          "hosting": {
+            "type": "array",
+            "description": "Deployment models the company published, when its page shows them.",
+            "items": {
+              "type": "string",
+              "description": "A deployment model."
+            }
+          },
+          "facts": {
+            "type": "object",
+            "description": "Whole days counted from timestamps on the record at the time of the response. They rate nothing.",
+            "required": [
+              "days_since_last_witnessed",
+              "days_since_profile_updated"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "days_since_last_witnessed": {
+                "description": "Days since the last witnessed reading, or null.",
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "integer",
+                    "description": "Days.",
+                    "minimum": 0
+                  }
+                ]
+              },
+              "days_since_profile_updated": {
+                "description": "Days since the profile last changed, or null.",
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "integer",
+                    "description": "Days.",
+                    "minimum": 0
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "NetworkBatch": {
+        "title": "Trooth Network batch check response, version 1",
+        "description": "The answer for every target, in the order sent. Canonical JSON Schema: https://trooth.co/schemas/network-batch.v1.schema.json; embedded here with its $defs as NetworkBatch_* components.",
+        "type": "object",
+        "required": [
+          "format",
+          "checked_at",
+          "summary",
+          "results",
+          "how_to_read"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "const": "trooth.network-batch.v1",
+            "description": "Names this shape."
+          },
+          "checked_at": {
+            "type": "string",
+            "description": "When this answer was read, ISO 8601."
+          },
+          "summary": {
+            "type": "object",
+            "description": "Counts of the statuses below.",
+            "required": [
+              "targets",
+              "listed",
+              "not_listed",
+              "withheld",
+              "unavailable",
+              "changed_since_pin"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "targets": {
+                "type": "integer",
+                "description": "Targets sent.",
+                "minimum": 0
+              },
+              "listed": {
+                "type": "integer",
+                "description": "Targets with a published record.",
+                "minimum": 0
+              },
+              "not_listed": {
+                "type": "integer",
+                "description": "Targets with no published record.",
+                "minimum": 0
+              },
+              "withheld": {
+                "type": "integer",
+                "description": "Targets withheld by an emergency restriction.",
+                "minimum": 0
+              },
+              "unavailable": {
+                "type": "integer",
+                "description": "Targets that could not be read on this call.",
+                "minimum": 0
+              },
+              "changed_since_pin": {
+                "type": "integer",
+                "description": "Targets whose pinned digest no longer matches.",
+                "minimum": 0
+              }
+            }
+          },
+          "results": {
+            "type": "array",
+            "description": "One entry per target.",
+            "items": {
+              "$ref": "#/components/schemas/NetworkBatch_item"
+            }
+          },
+          "how_to_read": {
+            "type": "string",
+            "description": "How to read this answer."
+          }
+        }
+      },
+      "NetworkBatch_item": {
+        "type": "object",
+        "description": "One target.",
+        "required": [
+          "target",
+          "status",
+          "problem",
+          "slug",
+          "name",
+          "domain",
+          "record_url",
+          "profile_url",
+          "witnessed",
+          "record",
+          "pin",
+          "facts"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "The target as read: a domain or a profile slug."
+          },
+          "status": {
+            "enum": [
+              "listed",
+              "not_listed",
+              "withheld",
+              "unavailable"
+            ],
+            "description": "listed: a published record. not_listed: none. withheld: an emergency restriction withholds it. unavailable: it could not be read on this call, which is not a statement about the company."
+          },
+          "problem": {
+            "description": "Set when status is unavailable.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "description": "Why this target could not be answered, from the problem registry.",
+                "required": [
+                  "code",
+                  "retryable",
+                  "next_action",
+                  "detail"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "The registry code; switch on this."
+                  },
+                  "retryable": {
+                    "type": "boolean",
+                    "description": "True when the same request may succeed later."
+                  },
+                  "next_action": {
+                    "enum": [
+                      "retry_later",
+                      "fix_request",
+                      "start_over",
+                      "resync",
+                      "use_current_record",
+                      "none"
+                    ],
+                    "description": "What to do next."
+                  },
+                  "detail": {
+                    "type": "string",
+                    "description": "This occurrence, in words."
+                  }
+                }
+              }
+            ]
+          },
+          "slug": {
+            "description": "The profile slug, or null.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "Slug."
+              }
+            ]
+          },
+          "name": {
+            "description": "The company's name, or null.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "Name."
+              }
+            ]
+          },
+          "domain": {
+            "description": "The domain the reads used, or null.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "Domain."
+              }
+            ]
+          },
+          "record_url": {
+            "description": "The full machine record.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "URL."
+              }
+            ]
+          },
+          "profile_url": {
+            "description": "The company's page.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "description": "URL."
+              }
+            ]
+          },
+          "witnessed": {
+            "description": "What Trooth's own readings show, or null when withheld or not read.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "description": "Trooth's readings.",
+                "required": [
+                  "standing",
+                  "last_witnessed_at",
+                  "first_witnessed_at",
+                  "unbroken_since",
+                  "checks_passed",
+                  "checks_run"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "standing": {
+                    "description": "witnessed when Trooth holds a reading, else null.",
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "const": "witnessed",
+                        "description": "witnessed"
+                      }
+                    ]
+                  },
+                  "last_witnessed_at": {
+                    "description": "The last reading, or null.",
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string",
+                        "description": "Time."
+                      }
+                    ]
+                  },
+                  "first_witnessed_at": {
+                    "description": "The first reading, or null.",
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string",
+                        "description": "Time."
+                      }
+                    ]
+                  },
+                  "unbroken_since": {
+                    "description": "Start of the current unbroken series of readings, or null.",
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string",
+                        "description": "Time."
+                      }
+                    ]
+                  },
+                  "checks_passed": {
+                    "description": "Checks read whose outcome was as expected, or null when not measured.",
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "integer",
+                        "description": "Count.",
+                        "minimum": 0
+                      }
+                    ]
+                  },
+                  "checks_run": {
+                    "description": "Checks read, or null when not measured.",
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "integer",
+                        "description": "Count.",
+                        "minimum": 0
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "record": {
+            "description": "The record version the single read serves, or null when it cannot be confirmed.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "description": "The version.",
+                "required": [
+                  "version",
+                  "digest",
+                  "recorded_at"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "description": "The record version.",
+                    "minimum": 1
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$",
+                    "description": "A SHA-256 digest, 64 lowercase hex characters."
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "description": "When this version was recorded."
+                  }
+                }
+              }
+            ]
+          },
+          "pin": {
+            "description": "Set when a pin was sent.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "description": "The pin and whether it still matches.",
+                "required": [
+                  "sent",
+                  "changed"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "sent": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$",
+                    "description": "A SHA-256 digest, 64 lowercase hex characters."
+                  },
+                  "changed": {
+                    "type": "boolean",
+                    "description": "True when the served version's digest differs from the pin, or the version cannot be confirmed: re-plan."
+                  }
+                }
+              }
+            ]
+          },
+          "facts": {
+            "type": "object",
+            "description": "Whole days and counts from timestamps on the record; they rate nothing.",
+            "required": [
+              "days_since_last_witnessed",
+              "days_since_profile_updated",
+              "unbroken_readings",
+              "total_readings"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "days_since_last_witnessed": {
+                "description": "Days since the last reading, or null.",
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "integer",
+                    "description": "Days.",
+                    "minimum": 0
+                  }
+                ]
+              },
+              "days_since_profile_updated": {
+                "description": "Days since the profile changed, or null.",
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "integer",
+                    "description": "Days.",
+                    "minimum": 0
+                  }
+                ]
+              },
+              "unbroken_readings": {
+                "description": "Readings in the current unbroken series, or null.",
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "integer",
+                    "description": "Count.",
+                    "minimum": 0
+                  }
+                ]
+              },
+              "total_readings": {
+                "description": "All readings held, or null.",
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "integer",
+                    "description": "Count.",
+                    "minimum": 0
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "NetworkChanges": {
+        "title": "Trooth Network change feed page, version 1",
+        "description": "A page of change events. Canonical JSON Schema: https://trooth.co/schemas/network-changes.v1.schema.json; embedded here with its $defs as NetworkChanges_* components.",
+        "type": "object",
+        "required": [
+          "format",
+          "events",
+          "next",
+          "has_more",
+          "stream",
+          "guarantees"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "const": "trooth.network-changes.v1",
+            "description": "Names this shape."
+          },
+          "events": {
+            "type": "array",
+            "description": "The events, oldest first.",
+            "items": {
+              "$ref": "#/components/schemas/NetworkChanges_event"
+            }
+          },
+          "next": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Send as after to continue. Also the id of the last event, so the stream can resume from it."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True when more events follow at once."
+          },
+          "stream": {
+            "type": "string",
+            "description": "The Server-Sent Events address for the same feed."
+          },
+          "guarantees": {
+            "type": "object",
+            "description": "What the feed promises and does not.",
+            "required": [
+              "order",
+              "delivery",
+              "withdrawal",
+              "retention_days",
+              "body"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "order": {
+                "type": "string",
+                "description": "Ordering rule."
+              },
+              "delivery": {
+                "type": "string",
+                "description": "Delivery rule."
+              },
+              "withdrawal": {
+                "type": "string",
+                "description": "What a withdrawal does."
+              },
+              "retention_days": {
+                "type": "integer",
+                "description": "Days of history kept.",
+                "minimum": 0
+              },
+              "body": {
+                "type": "string",
+                "description": "What an event leaves out."
+              }
+            }
+          }
+        }
+      },
+      "NetworkChanges_event": {
+        "type": "object",
+        "description": "One recorded version of one company's published record.",
+        "required": [
+          "id",
+          "type",
+          "event_id",
+          "kind",
+          "subject",
+          "version",
+          "recorded_at",
+          "digest",
+          "previous_digest",
+          "corrects_version",
+          "record_url",
+          "history_url"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The event's cursor: send as after, or as Last-Event-ID to the stream."
+          },
+          "type": {
+            "const": "record.version",
+            "description": "The event type."
+          },
+          "event_id": {
+            "type": "string",
+            "pattern": "^rv_[0-9a-f]{32}$",
+            "description": "The version's event identity; drop repeats by it."
+          },
+          "kind": {
+            "enum": [
+              "published",
+              "withdrawn"
+            ],
+            "description": "What happened to the record."
+          },
+          "subject": {
+            "type": "object",
+            "description": "The company.",
+            "required": [
+              "slug",
+              "domain"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "slug": {
+                "type": "string",
+                "description": "Profile slug."
+              },
+              "domain": {
+                "description": "Domain, or null.",
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "description": "Domain."
+                  }
+                ]
+              }
+            }
+          },
+          "version": {
+            "type": "integer",
+            "description": "The record version, per company.",
+            "minimum": 1
+          },
+          "recorded_at": {
+            "type": "string",
+            "description": "When the version was recorded, ISO 8601."
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "A SHA-256 digest, 64 lowercase hex characters."
+          },
+          "previous_digest": {
+            "description": "The previous version's digest, or null for the first.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "A SHA-256 digest, 64 lowercase hex characters."
+              }
+            ]
+          },
+          "corrects_version": {
+            "description": "The version this one corrects, or null.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "integer",
+                "description": "Version.",
+                "minimum": 1
+              }
+            ]
+          },
+          "record_url": {
+            "type": "string",
+            "description": "Where to read the record now."
+          },
+          "history_url": {
+            "type": "string",
+            "description": "The company's own change feed."
+          }
+        }
+      },
+      "ProblemCatalog": {
+        "title": "Trooth problem catalog, version 1",
+        "description": "The registry. Canonical JSON Schema: https://trooth.co/schemas/problem-catalog.v1.schema.json; embedded here with its $defs as ProblemCatalog_* components.",
+        "type": "object",
+        "required": [
+          "format",
+          "media_type",
+          "next_actions",
+          "problems",
+          "how_to_read"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "const": "trooth.problem-catalog.v1",
+            "description": "Names this shape."
+          },
+          "media_type": {
+            "const": "application/problem+json",
+            "description": "The media type of every problem document."
+          },
+          "next_actions": {
+            "type": "array",
+            "description": "Every next_action value.",
+            "items": {
+              "enum": [
+                "retry_later",
+                "fix_request",
+                "start_over",
+                "resync",
+                "use_current_record",
+                "none"
+              ],
+              "description": "A next action."
+            }
+          },
+          "problems": {
+            "type": "array",
+            "description": "One entry per code.",
+            "items": {
+              "type": "object",
+              "description": "A code.",
+              "required": [
+                "code",
+                "type",
+                "status",
+                "title",
+                "retryable",
+                "next_action",
+                "terminal"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "The code; switch on this."
+                },
+                "type": {
+                  "type": "string",
+                  "description": "The RFC 9457 type URI."
+                },
+                "status": {
+                  "type": "integer",
+                  "description": "HTTP status.",
+                  "minimum": 100
+                },
+                "title": {
+                  "type": "string",
+                  "description": "The fixed title."
+                },
+                "retryable": {
+                  "type": "boolean",
+                  "description": "True when the same request may succeed after retry_after."
+                },
+                "next_action": {
+                  "enum": [
+                    "retry_later",
+                    "fix_request",
+                    "start_over",
+                    "resync",
+                    "use_current_record",
+                    "none"
+                  ],
+                  "description": "What to do next."
+                },
+                "terminal": {
+                  "type": "boolean",
+                  "description": "True when repeating the same request cannot change the answer; exactly not retryable."
+                }
+              }
+            }
+          },
+          "how_to_read": {
+            "type": "string",
+            "description": "How to read this catalog."
+          }
+        }
       },
       "Error": {
         "type": "object",
@@ -2169,6 +3732,33 @@
                 "detail": {
                   "type": "string"
                 }
+              }
+            }
+          },
+          "error": {
+            "type": "object",
+            "description": "The one public error shape of the read routes (lib/network-http/errors.ts): code is one of five, message is detail, retry_after_seconds equals Retry-After when a wait is known.",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "not_found",
+                  "ambiguous",
+                  "invalid_input",
+                  "rate_limited",
+                  "upstream_timeout"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "retry_after_seconds": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }
@@ -2329,7 +3919,7 @@
           },
           "pillars": {
             "type": "array",
-            "description": "One entry per area, in the same shape on /api/public-mesh/{handle} and in every vendor of /api/compare (lib/public-pillars.ts).",
+            "description": "One entry per area, on /api/public-mesh/{handle} (lib/public-pillars.ts).",
             "items": {
               "type": "object",
               "required": [
@@ -2606,220 +4196,6 @@
           }
         }
       },
-      "Comparison": {
-        "type": "object",
-        "required": [
-          "vendors"
-        ],
-        "properties": {
-          "vendors": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PublicMesh"
-            }
-          },
-          "unavailable": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "frameworkRows": {
-            "type": "array",
-            "maxItems": 0,
-            "description": "Retired 2026-09-26; always empty."
-          },
-          "retired": {
-            "type": "object"
-          },
-          "states": {
-            "type": "array",
-            "description": "The cell states, in the words the comparison page prints. A cell with a plain answer has the state answered, which needs no legend entry.",
-            "items": {
-              "type": "object",
-              "required": [
-                "id",
-                "label",
-                "meaning"
-              ],
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "label": {
-                  "type": "string"
-                },
-                "meaning": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "comparison": {
-            "type": "object",
-            "required": [
-              "comparedAt",
-              "companies",
-              "rows"
-            ],
-            "properties": {
-              "comparedAt": {
-                "type": "string"
-              },
-              "snapshot": {
-                "type": [
-                  "object",
-                  "null"
-                ],
-                "properties": {
-                  "id": {
-                    "type": "string"
-                  },
-                  "savedAt": {
-                    "type": "string"
-                  }
-                }
-              },
-              "companies": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": [
-                    "key",
-                    "state"
-                  ],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "state": {
-                      "type": "string",
-                      "enum": [
-                        "listed",
-                        "not-listed",
-                        "unread"
-                      ]
-                    },
-                    "name": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "slug": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "recordVersion": {
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
-                    },
-                    "recordAt": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    }
-                  }
-                }
-              },
-              "rows": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": [
-                    "key",
-                    "category",
-                    "label",
-                    "cells"
-                  ],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "category": {
-                      "type": "string"
-                    },
-                    "label": {
-                      "type": "string"
-                    },
-                    "state": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "not-like-for-like when a stated edition, period or scope differs; otherwise null."
-                    },
-                    "note": {
-                      "type": "string"
-                    },
-                    "cells": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "state",
-                          "label",
-                          "flags"
-                        ],
-                        "properties": {
-                          "state": {
-                            "type": "string"
-                          },
-                          "label": {
-                            "type": "string"
-                          },
-                          "value": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "flags": {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "enum": [
-                                "conflicting",
-                                "outdated"
-                              ]
-                            }
-                          },
-                          "origin": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "scope": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "dating": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "reason": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "Suggestions": {
         "type": "object",
         "required": [
@@ -2900,8 +4276,8 @@
     }
   },
   "x-counts": {
-    "paths": 9,
-    "operations": 9
+    "paths": 13,
+    "operations": 13
   },
   "paths": {
     "/api/mobile/directory/search": {
@@ -3309,66 +4685,124 @@
         }
       }
     },
-    "/api/compare": {
+    "/api/network/search": {
       "get": {
-        "summary": "Compare companies side by side",
-        "description": "A comparison of published witnessed facts across up to four companies. Control rows are stripped, so a company's internal posture is never exposed through the comparison. `comparison` is the table a person sees on /compare, decided by the same module: every cell carries one of the states in `states`, the legend the page prints. A parameter at.<handle>=<n> reads that company at stored record version n, as a dated comparison link does. Handles are compared case-insensitively and a handle named twice is read once; the first four distinct handles are read and any beyond them are ignored. A request that names no handle and no snapshot is refused with 400 (missing_parameter) rather than answered with an empty comparison. Each vendor's pillars have the same shape GET /api/public-mesh/{handle} sends, observedAt and sourceRef included, null when unknown. Rate limited. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
+        "summary": "Discover companies by several criteria",
+        "description": "Multi-criteria discovery over the same published companies the directory lists: free text, industry, HQ country, data residency region, deployment model, product name, whether Trooth holds a witnessed reading, and profile changes since a date. A company is matched only by facts its public page shows: residency and deployment are searchable only while the company shows the section that renders them. Filters are exact, case-insensitive matches on what the company published; a company that published nothing for a filtered field is absent from the answer, which is not a no. Order is the directory's: witnessed first, then the most recent reading, then name; never by a figure. Each result carries facts, whole days counted from timestamps on the record (days_since_last_witnessed, days_since_profile_updated), which rate nothing. Cursor pagination only; a cursor is bound to the filters it was issued with. An unknown filter is refused. Errors are always RFC 9457 problem details (codes at /api/problems). Cached at the edge for 60 seconds with a 300 second stale-while-revalidate window. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
         "parameters": [
           {
-            "name": "handles",
+            "name": "q",
             "in": "query",
             "required": false,
-            "description": "Comma-separated company handles, one to four distinct, for example trooth,egnyte. Required unless snapshot is given; a request with neither is refused with 400.",
+            "description": "Free text, matched against name, tagline, domain, industries and product names.",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "snapshot",
+            "name": "industry",
             "in": "query",
             "required": false,
-            "description": "A saved comparison snapshot id (cs_ and 32 hex). Answers that snapshot: its companies, each read at the record version saved with it.",
+            "description": "An industry, matched as a substring of the company's industries.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "The HQ country, as the company published it; exact, case-insensitive.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "residency",
+            "in": "query",
+            "required": false,
+            "description": "A data residency region, as companies write it (EU, US, UK...); exact, case-insensitive.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hosting",
+            "in": "query",
+            "required": false,
+            "description": "A deployment model (Cloud, Private cloud / VPC, On-prem, Hybrid); exact, case-insensitive.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "description": "A product name, matched as a substring of the visible offering section.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "witnessed",
+            "in": "query",
+            "required": false,
+            "description": "true for companies with a witnessed reading, false for those without.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "description": "Only companies whose profile changed at or after this ISO 8601 date or UTC time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, 1 to 100 (default 25).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "next_cursor from the previous page, sent with the same filters.",
             "schema": {
               "type": "string"
             }
           }
         ],
-        "operationId": "get_api_compare",
+        "operationId": "get_api_network_search",
         "security": [],
         "responses": {
           "200": {
-            "description": "The comparison.",
+            "description": "A page of matching companies.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Comparison"
+                  "$ref": "#/components/schemas/NetworkSearch"
                 }
               }
             }
           },
           "400": {
-            "description": "Neither handles nor snapshot names anything to compare (code missing_parameter; the legacy body's error is missing_handles). Nothing was looked up.",
+            "description": "An unknown filter, a value that cannot be used, or a cursor issued for different filters.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No saved snapshot answers this id.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -3377,28 +4811,8 @@
             }
           },
           "429": {
-            "description": "Rate limited. Retry after a short pause.",
+            "description": "Rate limited.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "No company in the request could be read.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -3407,16 +4821,301 @@
             }
           },
           "503": {
-            "description": "The saved snapshot could not be read just now.",
+            "description": "The directory could not be read. Not an empty result.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/batch": {
+      "post": {
+        "summary": "Check many companies in one call",
+        "description": "A read of up to 25 companies in one request, for an agent that plans a sequence of steps and needs to know, before acting, what each company's record says and whether it changed since planning. Each target is a domain or profile slug, or { q, pin } where pin is the record digest from an earlier read. Each result has status (listed, not_listed, withheld, unavailable), what Trooth's own readings show, the version and SHA-256 digest of the record GET /api/network/profile serves, pin.changed when a pin was sent, and plain day counts. A target that cannot be read is that target's unavailable, with the problem registry's retryable flag and next action; the other targets are still answered. It changes nothing, so it takes no Idempotency-Key and repeating it is always safe. Nothing in it grades, ranks or certifies a company. Errors are always RFC 9457 problem details. Never cached. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "targets"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "targets": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 25,
+                    "description": "Domains or profile slugs, each a string or { q, pin }.",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "description": "A domain or profile slug."
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "q"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "q": {
+                              "type": "string",
+                              "description": "A domain or profile slug."
+                            },
+                            "pin": {
+                              "type": "string",
+                              "pattern": "^(sha-256=)?[0-9a-f]{64}$",
+                              "description": "The record digest from an earlier read."
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_network_batch",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "One result per target, in the order sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkBatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body or a target cannot be used; errors[] points into the body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 16 KiB.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/changes": {
+      "get": {
+        "summary": "Every record version across the Network",
+        "description": "Every published record version across the Trooth Network after a position, oldest first, at most 100 per page: the company, the version, its SHA-256 digest and the previous one, and where to read it. No record body and no personal fact. Without after or since, the page starts 24 hours back. next is the cursor to send as after, and also the id of the last event, so a client can move between this feed and the event stream without losing its place. Order is by recorded time, ties broken by event id; delivery is at least once across a reconnect (drop repeats by event_id); a company that withdraws its profile stops appearing. A position older than the retention window is 410 beyond_retention. Errors are always RFC 9457 problem details. Never cached. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "next from the previous page, or an event id from the stream.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "Start at this ISO 8601 date or UTC time instead of a cursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Events per page, 1 to 100 (default 50).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "operationId": "get_api_network_changes",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "A page of change events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkChanges"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A position or limit that cannot be used.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The position is older than the feed keeps (beyond_retention); read the records in full and resume from a fresh position.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The feed could not be read, or history is not set up on this database.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/changes/stream": {
+      "get": {
+        "summary": "Every record version, as Server-Sent Events",
+        "description": "The change feed as a text/event-stream (WHATWG Server-Sent Events). Each event is event: record.version, with the same JSON an entry of GET /api/network/changes carries and id set to its cursor, so a client that reconnects with Last-Event-ID (every EventSource does) resumes exactly after the last event it received. Without Last-Event-ID or after, the stream starts now. A connection is held for about 50 seconds and closed with a comment; the client reconnects (retry: 3000). A comment is sent every 15 seconds on a quiet stream. Errors before the stream opens are RFC 9457 problem details. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
+        "parameters": [
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "required": false,
+            "description": "The id of the last event received; the stream resumes after it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "The same as Last-Event-ID, for a client that cannot set headers.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "get_api_network_changes_stream",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "An event stream of record.version events.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events; each data line is a NetworkChanges_event."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A position that cannot be read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The position is older than the feed keeps.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The feed could not be read, or history is not set up.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/problems": {
+      "get": {
+        "summary": "Every error code and whether retrying can help",
+        "description": "The registry every RFC 9457 problem document from trooth.co draws on: each code with its status, fixed title, retryable flag, next action, and terminal (true when repeating the same request cannot change the answer, exactly not retryable). A code keeps its meaning once published. Cached for one hour. Readable cross-origin: the response carries Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so a browser on any site may read it without cookies.",
+        "operationId": "get_api_problems",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The registry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemCatalog"
                 }
               }
             }

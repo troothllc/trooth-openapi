@@ -70,6 +70,8 @@ tags:
     description: The public record of one company, readable with no key.
   - name: Signing keys
     description: The keys Trooth signs with, and the lifecycle of each, readable with no key.
+  - name: Receipts and action evidence
+    description: A published receipt, the state of an action evidence reference, and the check of a Trust Ledger Token, readable with no key.
   - name: Questionnaire drafts
     description: Draft answers to an inbound security questionnaire, each drawn from the company's own witnessed evidence.
   - name: Buyer intent
@@ -223,6 +225,172 @@ paths:
               schema: { $ref: '#/components/schemas/KeyList' }
         "500": { $ref: '#/components/responses/ServerError' }
 
+  # ---------------- Receipts and action evidence (no key) ----------------
+  /public/receipts/{id}:
+    get:
+      tags: [Receipts and action evidence]
+      operationId: getPublicReceipt
+      summary: Read a published receipt
+      description: |
+        One receipt its owner chose to publish: the signed bytes, the Ed25519
+        signature over them, and the kid of the key in /public/keys that
+        signed them. No key. A receipt is attested: Trooth states that it
+        issued these bytes at the stated time, and the signature does not make
+        the subject something Trooth witnessed. To check it yourself, fetch
+        /public/keys, take the key whose kid matches, and check the signature
+        over the UTF-8 bytes of `signed.payload`, then that the payload
+        contains `digest`. An id of any other shape, or one never published,
+        answers 404; a receipt its owner withdrew answers 410.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The receipt id, `rcpt_` and 20 lowercase hex digits.
+          schema: { type: string, pattern: "^rcpt_[0-9a-f]{20}$" }
+      responses:
+        "200":
+          description: The published receipt.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublishedReceipt' }
+        "404":
+          description: No published receipt answers to that id.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicLookupError' }
+        "410":
+          description: Its owner withdrew the receipt from public lookup.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicLookupError' }
+        "503":
+          description: Receipt lookup is not available just now. Safe to retry with backoff.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicLookupError' }
+
+  /public/action-evidence/key-check:
+    get:
+      tags: [Receipts and action evidence]
+      operationId: checkActionEvidenceKey
+      summary: Check the action evidence signing key
+      description: |
+        Whether the key that signs action evidence references matches the key
+        /public/keys publishes, and the kid it is published under. Answers
+        true or false and the kid, nothing about the key itself. No key. A
+        partner's offline check of a reference depends on this being true.
+        Limited to 120 requests a minute per client address.
+      security: []
+      responses:
+        "200":
+          description: The signing key's state.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionEvidenceKeyCheck' }
+        "429":
+          description: Over the limit of 120 requests a minute. Retry after the stated seconds.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicLookupError' }
+
+  /public/action-evidence/{jti}:
+    get:
+      tags: [Receipts and action evidence]
+      operationId: getActionEvidenceState
+      summary: Read the state of an action evidence reference
+      description: |
+        The state of one action evidence reference by its id: issued,
+        redeemed, expired or revoked, with when it expires and when it was
+        redeemed. No key. A reference is redeemed once, by POST
+        /public/action-evidence/{jti}/redeem with the whole reference, which
+        this document does not publish. An unknown id answers 404 with no
+        message. Limited to 120 requests a minute per client address.
+      security: []
+      parameters:
+        - name: jti
+          in: path
+          required: true
+          description: The reference id, the `jti` claim of the action evidence reference.
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: The reference's state.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionEvidenceState' }
+        "404":
+          description: No reference answers to that id.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicLookupError' }
+        "429":
+          description: Over the limit of 120 requests a minute. Retry after the stated seconds.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicLookupError' }
+
+  /v1/trust-ledger/verify/{identifier}:
+    get:
+      tags: [Receipts and action evidence]
+      operationId: checkTrustLedgerToken
+      summary: Check a Trust Ledger Token
+      description: |
+        Checks one Trust Ledger Token by its jti or the token itself, from the
+        stored fields: both signatures, expiry and revocation. No key. The
+        status says the outcome: 200 when the token holds, 404 when no token
+        answers to the identifier, 410 when it expired or was revoked, and 400
+        when a signature fails or the key that made it is not relied on.
+        Trooth's signature covers the witnessing event only, never the
+        declared claims; `non_binding` says so on every answer. Each check is
+        logged with the time, a truncated client address and user agent.
+      security: []
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          description: The token's jti, or the whole token as issued.
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: The token holds.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrustLedgerCheck' }
+        "400":
+          description: A signature fails or the key that made it is not relied on.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrustLedgerCheck' }
+        "404":
+          description: No Trust Ledger Token answers to that identifier.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrustLedgerCheck' }
+        "410":
+          description: The token expired or was revoked.
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrustLedgerCheck' }
+
   # ---------------- Questionnaire drafts ----------------
   /v1/questionnaire/answer:
     post:
@@ -334,12 +502,12 @@ webhooks:
         - { name: webhook-timestamp, in: header, required: true, description: "Standard Webhooks. Unix seconds, the same value as x-trooth-delivery-timestamp.", schema: { type: string, pattern: "^[0-9]+$" } }
         - { name: webhook-signature, in: header, required: true, description: "Standard Webhooks. v1 and a comma, then the base64 HMAC-SHA256 of webhook-id, a full stop, webhook-timestamp, a full stop and the raw body, keyed with the secret after whsec_ base64-decoded. The signature to check; space-separated values may appear during a rotation.", schema: { type: string, pattern: "^v1,[A-Za-z0-9+/=]+( v1,[A-Za-z0-9+/=]+)*$" } }
         - { name: x-trooth-delivery-timestamp, in: header, required: true, description: "Unix seconds, set once per event and the same on every attempt. Signed into x-trooth-signature-v2.", schema: { type: string, pattern: "^[0-9]+$" } }
-        - { name: x-trooth-signature-v2, in: header, required: true, description: "v2= and the HMAC-SHA256, keyed with the endpoint secret, of the timestamp, a full stop and the raw body; 64 lowercase hex characters. The check for a delivery without the Standard Webhooks headers.", schema: { type: string, pattern: "^v2=[0-9a-f]{64}$" } }
-        - { name: x-trooth-signature, in: header, required: false, deprecated: true, description: "Version 1, legacy: HMAC-SHA256 of the raw request body alone, keyed with the endpoint secret; 64 lowercase hex characters, no prefix. No timestamp is signed in it on this channel. Sent until 2027-04-30T23:59:59Z and not after.", schema: { type: string, pattern: "^[0-9a-f]{64}$" } }
+        - { name: x-trooth-signature-v2, in: header, required: true, description: "v2= and the HMAC-SHA256, keyed with the endpoint secret, of the timestamp, a full stop and the raw body; 64 lowercase hex characters. For up to 24 hours after the endpoint's secret is rolled, two such values, newest first, separated by one space; accept when either matches. The check for a delivery without the Standard Webhooks headers.", schema: { type: string, pattern: "^v2=[0-9a-f]{64}( v2=[0-9a-f]{64})?$" } }
+        - { name: x-trooth-signature, in: header, required: false, deprecated: true, description: "Version 1, legacy: HMAC-SHA256 of the raw request body alone, keyed with the endpoint secret; 64 lowercase hex characters, no prefix. No timestamp is signed in it on this channel. Two space-separated values, newest first, for up to 24 hours after a secret roll. Sent until 2027-04-30T23:59:59Z and not after.", schema: { type: string, pattern: "^[0-9a-f]{64}( [0-9a-f]{64})?$" } }
         - { name: x-trooth-signature-v1-sunset, in: header, required: false, description: "The HTTP-date after which version 1 is no longer sent, on every delivery that still carries it.", schema: { type: string, const: "Fri, 30 Apr 2027 23:59:59 GMT" } }
         - { name: x-trooth-event, in: header, required: true, description: "The event type, repeated from the body.", schema: { type: string } }
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/WebhookEvent' } } } }
-      responses: { "2XX": { description: "Acknowledge once the event is stored. A connection failure, 408, 429 or 5xx is attempted again, up to three attempts in all; every attempt is recorded in the delivery log." } }
+      responses: { "2XX": { description: "Acknowledge once the event is stored. A connection failure, 408, 429 or 5xx is attempted again, up to three attempts at once and then up to three more about 1, 6 and 24 hours later with a new timestamp; every attempt is recorded in the delivery log, where a scheduled one shows as pending with its next retry time." } }
 
 components:
   parameters:
@@ -813,7 +981,7 @@ components:
       required: [id, type, created, data]
       properties:
         id: { type: string, example: evt_9f2c4a1b7e03 }
-        type: { type: string, enum: [witness.changed, control.witnessed, profile.viewed, profile.requested, monitoring.drift], description: "`control.verified`, and the earlier name of `witness.changed`, are accepted as legacy names when you register an endpoint and are delivered as `control.witnessed` and `witness.changed`. `profile.requested` is accepted at registration and is not sent today. Deliveries to a subscription made with POST /public/trust/{slug}/agent-subscribe are a separate system: their type is `trust.posture.changed` and their envelope is not this one." }
+        type: { type: string, enum: [witness.changed, control.witnessed, profile.viewed, profile.requested, monitoring.drift, delegation.created, delegation.revoked, action.approval_requested, action.decided], description: "The last four are agent authority events, sent since 2026-10-15 (https://trooth.co/docs/agent-authority). `control.verified`, and the earlier name of `witness.changed`, are accepted as legacy names when you register an endpoint and are delivered as `control.witnessed` and `witness.changed`. `profile.requested` is accepted at registration and is not sent today. Deliveries to a subscription made with POST /public/trust/{slug}/agent-subscribe are a separate system: their type is `trust.posture.changed` and their envelope is not this one." }
         created: { type: integer, description: Epoch milliseconds. }
         data:
           description: Event-specific payload. The shape depends on the type, and the sender does not wrap it.
@@ -876,6 +1044,79 @@ components:
               prev_status: { type: string }
               new_status: { type: string }
         url: { type: string, format: uri }
+    PublishedReceipt:
+      type: object
+      description: A receipt its owner published. Attested, never witnessed.
+      required: [id, kind, subject, issued_at, published_at, digest, evidence_class, statement, method_version, signed, signature, checkable, how_to_check]
+      properties:
+        id: { type: string, pattern: "^rcpt_[0-9a-f]{20}$" }
+        kind: { type: string }
+        subject: { type: string }
+        issued_at: { type: string, format: date-time }
+        published_at: { type: string, format: date-time }
+        digest: { type: string, pattern: "^sha256:[0-9a-f]{64}$" }
+        evidence_class: { type: string, const: attested }
+        statement: { type: string }
+        method_version: { type: string, example: receipt-ed25519-v1 }
+        signed:
+          type: object
+          description: The bytes the signature covers, or null with the reason they cannot be reproduced.
+          required: [payload]
+          properties:
+            payload: { type: [string, "null"] }
+            encoding: { type: string, const: utf-8 }
+            source: { type: string, enum: [stored, rebuilt] }
+            reason: { type: string }
+        signature:
+          type: object
+          description: The Ed25519 signature in hex, or null with the reason none can be published.
+          required: [alg, value]
+          properties:
+            alg: { type: string, const: Ed25519 }
+            value: { type: [string, "null"], pattern: "^[0-9a-f]{128}$" }
+            encoding: { type: string, const: hex }
+            kid: { type: [string, "null"] }
+            key_directory: { type: string, format: uri }
+            reason: { type: string }
+        checkable: { type: boolean, description: "True when both the signed bytes and the signature are present." }
+        how_to_check: { type: string }
+    ActionEvidenceKeyCheck:
+      type: object
+      required: [signing_key_readable, published_as, matches_published]
+      additionalProperties: false
+      properties:
+        signing_key_readable: { type: boolean, description: "Whether the service could read the key that signs references." }
+        published_as: { type: [string, "null"], description: "The kid the key is published under in /public/keys, or null." }
+        matches_published: { type: boolean, description: "True when the signing key is the one /public/keys publishes under that kid." }
+    ActionEvidenceState:
+      type: object
+      required: [jti, state, expires_at, redeemed_at]
+      additionalProperties: false
+      properties:
+        jti: { type: string }
+        state: { type: string, enum: [issued, redeemed, expired, revoked] }
+        expires_at: { type: string, format: date-time }
+        redeemed_at: { type: [string, "null"], format: date-time }
+    TrustLedgerCheck:
+      type: object
+      description: One check of a Trust Ledger Token. Fields beyond these depend on the result and are additive.
+      required: [valid, result, verified_at, non_binding]
+      properties:
+        valid: { type: boolean }
+        result: { type: string, enum: [valid, not_found, expired, revoked, signature_invalid, key_not_trusted] }
+        detail: { type: string }
+        jti: { type: string }
+        customer_id: { type: string }
+        verified_at: { type: integer, description: "When the check ran, in epoch milliseconds." }
+        non_binding: { type: string, description: "What Trooth's signature covers and what it does not." }
+    PublicLookupError:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string, enum: [not_found, withdrawn, unavailable, temporarily_unavailable, rate_limited] }
+        message: { type: string }
+        withdrawn_at: { type: string, format: date-time, description: "On 410, when the owner withdrew the receipt." }
+        retry_after: { type: integer, description: "On 429, the seconds to wait." }
     Error:
       type: object
       required: [error]
