@@ -4,7 +4,7 @@
     "title": "Trooth Public API",
     "version": "1.1.0",
     "summary": "The read-only public surface of the Trooth Network.",
-    "description": "Everything here answers a question about a software or AI company from published\nevidence, and needs no credential. It is the surface a person, an integrator or an\nauthorized agent may build on.\n\nWHAT IS DELIBERATELY ABSENT. Authentication flows are not documented: they are\nbrowser redirects in a login sequence, not an API. Unauthenticated endpoints that\nsend mail or start work are rate limited and undocumented on purpose. Every\nsession-authenticated endpoint is absent because publishing an internal route map\nhelps an attacker and promises an API that is not offered.\n\nEVIDENCE VOCABULARY. Responses distinguish witnessed, public record (wire value\n`verified`), declared, inferred, unknown, not applicable, restricted, unavailable,\nstale and conflicting. Unknown is an answer, never a blank\nfilled in, and stale is never the same as wrong. No response carries a figure, a\nrank or a grade for a company: the witness facts are coverage (checks that read as\nexpected, out of checks run), freshness (last read), continuity (unbroken since) and change.\n\nA 404 from these endpoints usually means the Network holds no record, which is an\nanswer rather than a failure.\n\nCROSS-ORIGIN. Every operation here is readable from a browser on any site: responses\ncarry Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so\nno cookie is sent or honored. A browser's OPTIONS check before a request that sends\nthe Trooth-Contract, Trooth-Version or If-None-Match header is answered.\n\nTHE OTHER HOST. These are the routes trooth.co serves. api.trooth.co is a separate\nservice with its own contract, https://trooth.co/openapi.yaml, and that document is\nthe canonical schema for GET https://api.trooth.co/public/trust/{slug}\n(PublicTrustProfile), for GET https://api.trooth.co/public/keys and for the badge\nimage. Its authenticated routes take a DPoP-bound credential (RFC 9449), described\nthere and at https://trooth.co/docs/api#authorization. The service applies no rate\nlimit to the profile read. Its MCP server at https://api.trooth.co/public/mcp\nmeters tools/call at 300 units every 60 seconds per caller (the OAuth\nsubject when a valid token is presented, otherwise the IP address), counted in one\nstore shared by every server instance; each tool call costs 1 to 4 units, as\nhttps://trooth.co/.well-known/mcp.json lists. Over it: 429 with Retry-After giving the seconds\nuntil units free up.\n\nGenerated from app/api by scripts/gen-openapi.mjs. check:openapi fails the build\nwhen this document and the source disagree.",
+    "description": "Everything here answers a question about a software or AI company from published\nevidence, and needs no credential. It is the surface a person, an integrator or an\nauthorized agent may build on.\n\nWHAT IS DELIBERATELY ABSENT. Authentication flows are not documented: they are\nbrowser redirects in a login sequence, not an API. Unauthenticated endpoints that\nsend mail or start work are rate limited and undocumented on purpose. Every\nsession-authenticated endpoint is absent because publishing an internal route map\nhelps an attacker and promises an API that is not offered.\n\nEVIDENCE VOCABULARY. Responses distinguish witnessed, public record (wire value\n`verified`), declared, inferred, unknown, not applicable, restricted, unavailable,\nstale and conflicting. Unknown is an answer, never a blank\nfilled in, and stale is never the same as wrong. No response carries a figure, a\nrank or a grade for a company: the witness facts are coverage (checks that read as\nexpected, out of checks run), freshness (last read), continuity (unbroken since) and change.\n\nA 404 from these endpoints usually means the Network holds no record, which is an\nanswer rather than a failure.\n\nCROSS-ORIGIN. Every operation here is readable from a browser on any site: responses\ncarry Access-Control-Allow-Origin: * and never Access-Control-Allow-Credentials, so\nno cookie is sent or honored. A browser's OPTIONS check before a request that sends\nthe Trooth-Contract, Trooth-Version or If-None-Match header is answered.\n\nTHREE DOCUMENTS, NO SHARED PATH. This one covers the public, credential-free reads\ntrooth.co serves under /api. The authenticated trooth.co API an agent works a\nworkspace with, every /api/v1 route, is https://trooth.co/openapi-v1.json. api.trooth.co is a separate\nservice with its own contract, https://trooth.co/openapi.yaml: its public reads under\n/public (GET https://api.trooth.co/public/keys, the badge image, receipts and action\nevidence) and its authenticated routes, which take a DPoP-bound credential (RFC 9449),\ndescribed there and at https://trooth.co/docs/api#authorization. Its MCP server at https://api.trooth.co/public/mcp\nmeters tools/call at 300 units every 60 seconds per caller (the OAuth\nsubject when a valid token is presented, otherwise the IP address), counted in one\nstore shared by every server instance; each tool call costs 1 to 8 units, as\nhttps://trooth.co/.well-known/mcp.json lists. Over it: 429 with Retry-After giving the seconds\nuntil units free up.\n\nGenerated from app/api by scripts/gen-openapi.mjs. check:openapi fails the build\nwhen this document and the source disagree.",
     "contact": {
       "name": "Trooth developer support",
       "email": "developers@trooth.co",
@@ -15,6 +15,28 @@
       "url": "https://trooth.co/terms"
     }
   },
+  "externalDocs": {
+    "url": "https://trooth.co/openapi.yaml",
+    "description": "The api.trooth.co contract (its /public reads and its authenticated routes); this document shares no path with it"
+  },
+  "x-related-documents": [
+    {
+      "url": "https://trooth.co/openapi.yaml",
+      "covers": "api.trooth.co"
+    },
+    {
+      "url": "https://trooth.co/openapi-v1.json",
+      "covers": "trooth.co /api/v1, with an agent key or the MCP sign-in"
+    },
+    {
+      "url": "https://trooth.co/openapi/network.json",
+      "covers": "every Trooth Network MCP tool as POST https://api.trooth.co/v1/tools/{tool}, with x-trooth"
+    },
+    {
+      "url": "https://trooth.co/openapi/semanto.json",
+      "covers": "Semanto's routes on api.trooth.co, each with its MCP tool and CLI command in x-trooth"
+    }
+  ],
   "servers": [
     {
       "url": "https://trooth.co",
@@ -3051,7 +3073,11 @@
                       "start_over",
                       "resync",
                       "use_current_record",
-                      "none"
+                      "none",
+                      "authenticate",
+                      "ask_owner",
+                      "prove_domain",
+                      "contact_support"
                     ],
                     "description": "What to do next."
                   },
@@ -3572,7 +3598,11 @@
                 "start_over",
                 "resync",
                 "use_current_record",
-                "none"
+                "none",
+                "authenticate",
+                "ask_owner",
+                "prove_domain",
+                "contact_support"
               ],
               "description": "A next action."
             }
@@ -3590,6 +3620,7 @@
                 "title",
                 "retryable",
                 "next_action",
+                "fix",
                 "terminal"
               ],
               "additionalProperties": false,
@@ -3622,9 +3653,17 @@
                     "start_over",
                     "resync",
                     "use_current_record",
-                    "none"
+                    "none",
+                    "authenticate",
+                    "ask_owner",
+                    "prove_domain",
+                    "contact_support"
                   ],
                   "description": "What to do next."
+                },
+                "fix": {
+                  "type": "string",
+                  "description": "One sentence on how to repair the request; the same sentence the error carries."
                 },
                 "terminal": {
                   "type": "boolean",
@@ -3639,25 +3678,9 @@
           }
         }
       },
-      "Error": {
-        "type": "object",
-        "required": [
-          "error"
-        ],
-        "properties": {
-          "error": {
-            "type": "string",
-            "description": "A short machine-readable reason."
-          },
-          "message": {
-            "type": "string",
-            "description": "The same reason, as a sentence."
-          }
-        }
-      },
       "ProblemDetails": {
         "type": "object",
-        "description": "RFC 9457 problem details, served instead of the Error body when the request's Accept header names application/problem+json. Every other caller receives the Error body. Unknown members must be ignored (RFC 9457 section 3.2).",
+        "description": "RFC 9457 problem details, the body of every error. A route that answered errors with a JSON body of its own before 2026-11-05 (error, message, found and the rest) keeps those members, with their values, beside these. Unknown members must be ignored (RFC 9457 section 3.2).",
         "required": [
           "type",
           "title",
@@ -3665,13 +3688,13 @@
           "code",
           "request_id",
           "retryable",
-          "next_action"
+          "next_action",
+          "fix"
         ],
         "properties": {
           "type": {
             "type": "string",
-            "format": "uri",
-            "description": "Stable per code; resolves to the code's entry at https://trooth.co/docs/api#problem-<code>."
+            "description": "A URI, stable per code; resolves to the code's entry at https://trooth.co/docs/api#problem-<code>."
           },
           "title": {
             "type": "string",
@@ -3705,7 +3728,7 @@
           },
           "retry_at": {
             "type": "string",
-            "format": "date-time"
+            "description": "The time retry_after names, as an RFC 3339 date-time."
           },
           "next_action": {
             "type": "string",
@@ -3715,8 +3738,17 @@
               "start_over",
               "resync",
               "use_current_record",
-              "none"
-            ]
+              "none",
+              "authenticate",
+              "ask_owner",
+              "prove_domain",
+              "contact_support"
+            ],
+            "description": "What to do next, one word a client can switch on."
+          },
+          "fix": {
+            "type": "string",
+            "description": "One sentence on how to repair the request."
           },
           "errors": {
             "type": "array",
@@ -3736,8 +3768,11 @@
             }
           },
           "error": {
-            "type": "object",
-            "description": "The one public error shape of the read routes (lib/network-http/errors.ts): code is one of five, message is detail, retry_after_seconds equals Retry-After when a wait is known.",
+            "type": [
+              "object",
+              "string"
+            ],
+            "description": "On a route that sent a string error before 2026-11-05, that string, kept. Otherwise the one public error shape of the read routes (lib/network-http/errors.ts): code is one of five, message is detail, retry_after_seconds equals Retry-After when a wait is known.",
             "required": [
               "code",
               "message"
@@ -4348,11 +4383,6 @@
           "400": {
             "description": "A cursor that cannot be read.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -4363,11 +4393,6 @@
           "503": {
             "description": "The directory could not be read. Not a statement about any company.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -4398,11 +4423,6 @@
           "503": {
             "description": "The directory could not be read.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -4444,11 +4464,6 @@
           "404": {
             "description": "The company is not on the Trooth Network.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -4459,11 +4474,6 @@
           "503": {
             "description": "The record could not be read. Not a statement about the company.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -4505,11 +4515,6 @@
           "404": {
             "description": "No public record for this handle.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -4520,11 +4525,6 @@
           "503": {
             "description": "The record could not be read. Not a statement about the company.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -4640,11 +4640,6 @@
           "400": {
             "description": "The q parameter is missing, a contract version this deployment does not answer was requested, the query and the Trooth-Contract header asked for different contracts, a section name or limit could not be applied exactly, or an after cursor is malformed, stale or was issued for other sections.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -4655,11 +4650,6 @@
           "429": {
             "description": "Over the per-network budget. Retry-After is the number of seconds until the window that refused resets.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -4670,11 +4660,6 @@
           "503": {
             "description": "Trooth could not read its own record on this load. Retry after the Retry-After interval; nothing is asserted about the company.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
@@ -5185,11 +5170,6 @@
           "404": {
             "description": "Unknown document.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"

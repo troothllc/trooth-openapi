@@ -14,7 +14,7 @@ DNS says where a company is. A TLS certificate says the connection is authentic.
 
 ## Where the statements in this file come from
 
-Every statement below about the API was read out of the published OpenAPI document served at [trooth.co/openapi.json](https://trooth.co/openapi.json) on 2026-10-19. Where this file says "the document", it means the published contract, not a file at a path here.
+Every statement below about the API was read out of the published OpenAPI document served at [trooth.co/openapi.json](https://trooth.co/openapi.json) on 2026-11-09. Where this file says "the document", it means the published contract, not a file at a path here.
 
 **What is in this repository.** `spec/openapi.json` is a copy of this contract as served at [trooth.co/openapi.json](https://trooth.co/openapi.json). `spec/openapi.yaml` is a copy of the contract for the other host, `api.trooth.co`, as served at [trooth.co/openapi.yaml](https://trooth.co/openapi.yaml). Both copies are refreshed from the served files each time Trooth publishes this repository, and the `drift` job in `.github/workflows/spec-lint.yml` runs every Monday and fails when either copy differs from what trooth.co serves. `examples/` holds signature checks for webhooks sent from `api.trooth.co`, not examples of the operations below. Where a file here disagrees with a served contract, the served contract is right.
 

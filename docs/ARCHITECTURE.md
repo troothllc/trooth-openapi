@@ -8,8 +8,8 @@ where it disagrees with one of them, the contract is right.
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'IBM Plex Mono, monospace','clusterBkg':'#f6f2e9','clusterBorder':'#0b0e14','titleColor':'#0b0e14','textColor':'#0b0e14','lineColor':'#0b0e14'}}}%%
 flowchart TB
-  WEB["trooth.co · nine public GET operations, no key · contract: trooth.co/openapi.json"]:::api
-  API["api.trooth.co · a separate service · public Trust Profile read, two Bearer-token operations, MCP server at /public/mcp · contract: trooth.co/openapi.yaml"]:::api
+  WEB["trooth.co · thirteen public operations, no key · contract: trooth.co/openapi.json"]:::api
+  API["api.trooth.co · a separate service · six public reads, two operations behind a DPoP-bound key, MCP server at /public/mcp · contract: trooth.co/openapi.yaml"]:::api
   API -- "MCP tool trooth_public_trust_profile reads GET /api/network/profile" --> WEB
   API --> HOOK["Signed webhooks to endpoints a company registers in its workspace"]:::dark
 
@@ -44,19 +44,23 @@ public signing keys are listed at
    run) and the unbroken run of readings. Every response also carries a
    `methodology` object that states the cadence, the gap tolerance, the retention
    period, the freshness windows and what Trooth does not read.
-3. Anyone can read a record with no credential: through the nine public operations
-   on trooth.co, through `GET /public/trust/{slug}` on api.trooth.co, or through the
-   MCP server at `https://api.trooth.co/public/mcp`, whose `trooth_public_trust_profile` tool
+3. Anyone can read a record with no credential: through the thirteen public
+   operations on trooth.co (twelve GET and one POST batch read that changes
+   nothing), or through the MCP server at `https://api.trooth.co/public/mcp`, whose `trooth_public_trust_profile` tool
    reads the trooth.co profile.
 4. A company that registers a webhook endpoint in its workspace receives signed
-   events from api.trooth.co. The `x-trooth-signature` header is the HMAC-SHA256 of
-   the raw request body, keyed with the endpoint's signing secret. Trooth makes one
-   attempt per event and does not retry on its own, and no timestamp is signed on
-   this channel, so a receiver deduplicates on the event `id`. The files in
-   `examples/` check this channel only. Alert destinations are a second channel,
-   delivered by the Trooth application, and they sign a timestamp and the body
-   under a different scheme, described at
-   [trooth.co/docs#webhooks](https://trooth.co/docs#webhooks).
+   events from api.trooth.co. Every delivery carries the Standard Webhooks headers:
+   `webhook-signature` is `v1,` and the base64 HMAC-SHA256 of `webhook-id`, a full
+   stop, `webhook-timestamp`, a full stop and the raw body, keyed with the secret
+   after `whsec_`, base64-decoded. A receiver refuses a timestamp more than 300
+   seconds from its clock, compares in constant time and deduplicates on
+   `webhook-id`. `x-trooth-signature-v2` signs the same timestamp and body in hex.
+   The legacy `x-trooth-signature` signs the body alone, so it checks a replayed
+   delivery forever; it is sent until 2027-04-30T23:59:59Z and not after. Each
+   event is attempted up to three times. The files in `examples/` check the legacy
+   header only; use the Standard Webhooks check for new receivers, as described at
+   [trooth.co/docs/webhooks](https://trooth.co/docs/webhooks#verify). Where this
+   paragraph and trooth.co/openapi.yaml differ, the contract is right.
 
 ## Where the contracts are kept
 

@@ -1,8 +1,10 @@
 # Trooth Network API: the public contract for api.trooth.co.
 #
-# Served at https://trooth.co/openapi.yaml. The contract for the trooth.co host
-# is a separate document, https://trooth.co/openapi.json. Every path below has a
-# handler at api.trooth.co, and every schema describes the body that host sends.
+# Served at https://trooth.co/openapi.yaml. The trooth.co host has two documents
+# of its own: https://trooth.co/openapi.json (its public reads) and
+# https://trooth.co/openapi-v1.json (its authenticated /api/v1 API). No path is
+# in more than one of the three. Every path below has a handler at
+# api.trooth.co, and every schema describes the body that host sends.
 #
 # One wire value is kept exactly as sent even though it carries a retired
 # product name: the value of the poweredBy field, described as the opaque
@@ -11,12 +13,14 @@
 openapi: 3.1.0
 info:
   title: Trooth Network API
-  version: "1.1"
+  version: "1.2"
+  # 1.2 (2026-11-05) removes GET /public/trust/{slug}, retired with 410 Gone
+  # (T-31), and names the two trooth.co documents in info and externalDocs.
   # 1.1 (2026-10-09) is additive: /public/keys and the badge image are
   # described, the DPoP security scheme and its 401 challenge are declared,
   # the profile read's 400 is declared, and the disclaimer header is spelled
   # as sent. 1.0 was released on 2026-08-22.
-  x-released: "2026-10-09"
+  x-released: "2026-11-05"
   summary: >-
     The public API of the Trooth Network, which is Trooth's only product and is
     free. DNS says where a company is; Trooth says who it is.
@@ -35,6 +39,15 @@ info:
     /v1/evidence/webhook, which this document does not publish. A refused
     credential answers 401 with a `WWW-Authenticate: DPoP` challenge naming
     the error: `dpop_required`, `invalid_dpop_proof` or `invalid_token`.
+
+    WHICH DOCUMENT COVERS WHAT. This one covers api.trooth.co. The public,
+    credential-free reads of trooth.co, the canonical company read
+    `GET https://trooth.co/api/network/profile` among them, are
+    https://trooth.co/openapi.json. The authenticated trooth.co API an agent
+    works a workspace with, every /api/v1 route with an agent key or the MCP
+    sign-in, is https://trooth.co/openapi-v1.json. The three share no path.
+    `GET /public/trust/{slug}` is retired: it answers 410 Gone with
+    Deprecation, Sunset and a body naming the canonical read.
 
     This document lists only routes that exist. It is deliberately smaller than
     the API: session-scoped workspace routes, authentication flows and
@@ -55,6 +68,14 @@ info:
     breaks the reader matching on it.
   contact: { name: Trooth, url: https://trooth.co, email: hello@trooth.co }
   license: { name: Terms of Service, url: https://trooth.co/terms }
+
+externalDocs:
+  description: The trooth.co contract (its public reads under /api); this document shares no path with it. The authenticated trooth.co API is https://trooth.co/openapi-v1.json.
+  url: https://trooth.co/openapi.json
+
+x-related-documents:
+  - { url: "https://trooth.co/openapi.json", covers: "trooth.co public reads, no credential" }
+  - { url: "https://trooth.co/openapi-v1.json", covers: "trooth.co /api/v1, with an agent key or the MCP sign-in" }
 
 servers:
   - url: https://api.trooth.co
@@ -81,97 +102,10 @@ tags:
 
 paths:
   # ---------------- Public profile (no key) ----------------
-  /public/trust/{slug}:
-    get:
-      tags: [Public profile]
-      operationId: getPublicTrustProfile
-      summary: Get a company's public Trust Profile (deprecated; sunset 2027-04-30)
-      deprecated: true
-      description: |
-        DEPRECATED (audit 2026-10-12, F-03). The canonical read of a company is
-        `GET https://trooth.co/api/network/profile?q={domain-or-slug}&contract=2`
-        (https://trooth.co/openapi.json). This route keeps answering exactly as
-        below until Fri, 30 Apr 2027 23:59:59 GMT, and every answer carries
-        `Deprecation: @1791763200` (RFC 9745; 2026-10-12), `Sunset` (RFC 8594)
-        and a `Link` header naming the migration recipe (`rel="deprecation"`)
-        and the canonical lookup (`rel="successor-version"`, RFC 5829). After
-        the sunset it answers 410 Gone with the same links. Migration:
-        https://trooth.co/docs/trust-profile-api#migrate-from-public-trust
-
-        The public projection of one company's witnessed posture: pillar counts,
-        audit-chain evidence and an AI profile. No key.
-
-        The slug is matched exactly against the company id and the company
-        domain, and then against the slug the workspace hands out, so
-        `co-example-com`, `example.com` and a workspace slug all resolve. There
-        is no sample slug; an identifier the Network does not hold is simply
-        unknown.
-
-        This is the canonical schema for this route. No rate limit is applied
-        to it. An identifier outside the slug pattern (for example `..` or
-        `bad_slug!`) is refused with 400 `invalid_input` before anything is
-        looked up.
-
-        A company that has published a canonical profile on the Trooth Network
-        has exactly one profile there, and this route answers 404 with that
-        canonical URL rather than serving a second representation.
-
-        No figure is published for a company. None appears on the public page,
-        so none appears here either; `lastReading` carries the date of the most
-        recent reading and nothing else.
-      security: []
-      parameters: [{ $ref: '#/components/parameters/slug' }]
-      responses:
-        "200":
-          description: The published Trust Profile.
-          headers:
-            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
-            X-Trooth-Disclaimer: { $ref: '#/components/headers/XTroothDisclaimer' }
-            X-Trooth-Automation: { $ref: '#/components/headers/XTroothAutomation' }
-            Deprecation: { $ref: '#/components/headers/Deprecation' }
-            Sunset: { $ref: '#/components/headers/Sunset' }
-            Link: { $ref: '#/components/headers/DeprecationLink' }
-          content: { application/json: { schema: { $ref: '#/components/schemas/PublicTrustProfile' } } }
-        "400":
-          description: The identifier is not a domain or a Trooth slug. Nothing was looked up.
-          headers:
-            Deprecation: { $ref: '#/components/headers/Deprecation' }
-            Sunset: { $ref: '#/components/headers/Sunset' }
-            Link: { $ref: '#/components/headers/DeprecationLink' }
-          content: { application/json: { schema: { $ref: '#/components/schemas/InvalidSlug' } } }
-        "410":
-          description: After the sunset (Fri, 30 Apr 2027 23:59:59 GMT) the route is retired and every request answers this, with the same Link header.
-          headers:
-            Deprecation: { $ref: '#/components/headers/Deprecation' }
-            Sunset: { $ref: '#/components/headers/Sunset' }
-            Link: { $ref: '#/components/headers/DeprecationLink' }
-          content: { application/json: { schema: { $ref: '#/components/schemas/RetiredLookup' } } }
-        "503":
-          description: The canonical lookup could not be asked in time. That says nothing about the company; retry after Retry-After seconds or use the canonical lookup.
-          headers:
-            Retry-After: { schema: { type: integer } }
-            Deprecation: { $ref: '#/components/headers/Deprecation' }
-            Sunset: { $ref: '#/components/headers/Sunset' }
-            Link: { $ref: '#/components/headers/DeprecationLink' }
-        "404":
-          description: |
-            No published profile at this identifier. Three distinct answers share
-            this status: the company is unclaimed, the owner has claimed it and
-            chosen not to publish, or the profile has moved to a canonical page
-            on the Trooth Network. Privacy is a valid choice and is not a
-            negative signal.
-          headers:
-            Deprecation: { $ref: '#/components/headers/Deprecation' }
-            Sunset: { $ref: '#/components/headers/Sunset' }
-            Link: { $ref: '#/components/headers/DeprecationLink' }
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - { $ref: '#/components/schemas/UnpublishedProfile' }
-                  - { $ref: '#/components/schemas/MovedToCanonical' }
-        "500": { $ref: '#/components/responses/ServerError' }
-
+  # GET /public/trust/{slug} was retired on 2026-11-05 (T-31): it answers 410 Gone
+  # with Deprecation, Sunset and a body naming the canonical lookup,
+  # GET https://trooth.co/api/network/profile?q={domain-or-slug}&contract=2
+  # (https://trooth.co/openapi.json), and is no longer part of this contract.
   /public/trust/{slug}/badge.svg:
     get:
       tags: [Public profile]
@@ -511,17 +445,6 @@ webhooks:
 
 components:
   parameters:
-    slug:
-      name: slug
-      in: path
-      required: true
-      description: >-
-        A company domain (`example.com`), a company id, or the slug the
-        workspace hands out (`co-example-com`). Letters, digits, dots and
-        hyphens, starting and ending with a letter or digit, at most 253
-        characters; matched without regard to case. Anything else is refused
-        with 400 `invalid_input`.
-      schema: { type: string, minLength: 1, maxLength: 253, pattern: "^[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$" }
     badgeSlug:
       name: slug
       in: path
@@ -599,23 +522,6 @@ components:
       schema: { type: string }
     XTroothAutomation:
       description: What Trooth signs and what it never signs, as a short sentence.
-      schema: { type: string }
-    Deprecation:
-      description: >-
-        RFC 9745: the moment the route was deprecated, as a Structured Field
-        Date. `@1791763200` is 2026-10-12T00:00:00Z.
-      schema: { type: string, const: "@1791763200" }
-    Sunset:
-      description: >-
-        RFC 8594: when the route stops answering. RFC 9745 section 3 requires
-        it not to be earlier than Deprecation.
-      schema: { type: string, const: "Fri, 30 Apr 2027 23:59:59 GMT" }
-    DeprecationLink:
-      description: >-
-        Two links. rel="deprecation" (RFC 9745 section 3) names the migration
-        recipe, https://trooth.co/docs/trust-profile-api#migrate-from-public-trust;
-        rel="successor-version" (RFC 5829) names the canonical lookup for the
-        same identifier on trooth.co.
       schema: { type: string }
 
   schemas:
@@ -796,137 +702,6 @@ components:
         }
       }
     # END GENERATED KeyList
-    PublicTrustProfile:
-      type: object
-      required: [profile, pillarSummary, chainEvidence, poweredBy, disclaimer]
-      properties:
-        profile:
-          type: object
-          properties:
-            displayName: { type: string }
-            domain: { type: [string, "null"] }
-            jurisdiction: { type: string, example: US }
-        lastReading:
-          type: [object, "null"]
-          description: >-
-            The most recent reading, or null when none has been recorded.
-            Carries the date only. Trooth publishes no figure for a company.
-          properties:
-            readAt: { type: integer, description: Epoch milliseconds. When Trooth last read the evidence behind this profile. }
-        pillarSummary:
-          type: object
-          description: Counts across the 25 pillars.
-          properties:
-            total: { type: integer, const: 25 }
-            green: { type: integer }
-            amber: { type: integer }
-            red: { type: integer }
-        chainEvidence:
-          type: object
-          properties:
-            auditBlockCount: { type: integer }
-            chainIntegrity: { type: string, enum: [intact, broken, empty] }
-            integrityCheck: { type: string, example: hash-linkage }
-        aiProfile: { $ref: '#/components/schemas/AiProfile' }
-        poweredBy:
-          type: string
-          description: >-
-            A fixed branding constant. It is always present and always the same
-            string; it says nothing about the company, the profile or the
-            request, and nothing should parse it or branch on it. Its value is
-            a product name this business retired, so it is not reprinted on a
-            public surface - the worker that still sends it is where that gets
-            fixed, and the const is dropped here rather than republished.
-        disclaimer: { type: string }
-        disclaimer_url: { type: string, format: uri }
-    AiProfile:
-      type: object
-      description: The AI posture block on the public card, assembled from the company's own AI inventory, screening history and governance controls.
-      properties:
-        systemsTotal: { type: integer }
-        byRiskTier:
-          type: object
-          description: Counts keyed by EU AI Act risk classification, plus `unclassified`.
-          additionalProperties: { type: integer }
-        byKind:
-          type: object
-          description: Counts keyed by system kind, for example model, agent, application, dataset.
-          additionalProperties: { type: integer }
-        agents: { type: integer }
-        guard:
-          type: object
-          properties:
-            active: { type: boolean }
-            lastScreenedAt: { type: [integer, "null"], description: Epoch milliseconds. }
-            lastRisk: { type: [string, "null"] }
-        governance:
-          type: object
-          properties:
-            frameworks:
-              type: array
-              items:
-                type: object
-                properties:
-                  name: { type: string, example: ISO 42001 }
-                  satisfied: { type: integer }
-                  total: { type: integer }
-            assessments: { type: integer }
-        highlights: { type: array, items: { type: string } }
-        hasAi: { type: boolean }
-    InvalidSlug:
-      type: object
-      description: Returned with status 400 when the identifier is not a domain or a Trooth slug.
-      required: [slug, status, error, message]
-      properties:
-        slug: { type: string, description: The identifier as given. }
-        status: { type: string, const: invalid_input }
-        error: { type: string, const: invalid_input }
-        message: { type: string }
-        supported_lookup: { type: string, format: uri, description: "The supported read on trooth.co for the same identifier." }
-    UnpublishedProfile:
-      type: object
-      description: Returned with status 404 when the Network holds no readable profile at this identifier.
-      required: [slug, status, measured, provenance, message]
-      properties:
-        slug: { type: string }
-        status: { type: string, enum: [unclaimed, private] }
-        measured: { type: boolean, description: "False when unclaimed, true when claimed but withheld." }
-        provenance: { type: string, enum: [honest_absence, withheld_by_owner] }
-        message: { type: string }
-        supported_lookup: { type: string, format: uri, description: "The supported read on trooth.co, GET /api/network/profile, for the same identifier." }
-        claim:
-          type: object
-          properties:
-            action: { type: string }
-            claim_url: { type: string, format: uri }
-            who_can_claim: { type: string }
-            what_changes: { type: string }
-        also_available:
-          type: object
-          description: Present only on an unclaimed record.
-          properties:
-            outside_in: { type: string }
-    RetiredLookup:
-      type: object
-      description: Returned with status 410 after the sunset.
-      required: [status, error, message, supported_lookup, migration]
-      properties:
-        status: { type: string, const: gone }
-        error: { type: string, const: gone }
-        message: { type: string }
-        supported_lookup: { type: string, format: uri }
-        migration: { type: string, format: uri }
-    MovedToCanonical:
-      type: object
-      description: Returned with status 404 when the company has one canonical profile on the Trooth Network.
-      required: [error, message, canonicalUrl]
-      properties:
-        slug: { type: string, description: The identifier as given. }
-        status: { type: string, const: moved }
-        error: { type: string, const: moved }
-        message: { type: string }
-        canonicalUrl: { type: string, format: uri }
-        supported_lookup: { type: string, format: uri, description: "The supported read on trooth.co, GET /api/network/profile, for the same identifier." }
     QuestionnaireRequest:
       type: object
       required: [questions]

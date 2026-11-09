@@ -1,4 +1,5 @@
 // Verify an X-Trooth-Signature webhook sent from api.trooth.co (Go). Constant-time compare on the RAW body.
+// Legacy header: sent until 2027-04-30T23:59:59Z and it signs no timestamp. New receivers check the Standard Webhooks headers instead: https://trooth.co/docs/webhooks#verify
 // Alert destinations sign a timestamp and the body under a different scheme, and this check rejects them: https://trooth.co/docs#webhooks
 package trooth
 
