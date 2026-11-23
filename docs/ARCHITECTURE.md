@@ -9,7 +9,7 @@ where it disagrees with one of them, the contract is right.
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'IBM Plex Mono, monospace','clusterBkg':'#f6f2e9','clusterBorder':'#0b0e14','titleColor':'#0b0e14','textColor':'#0b0e14','lineColor':'#0b0e14'}}}%%
 flowchart TB
   WEB["trooth.co · thirteen public operations, no key · contract: trooth.co/openapi.json"]:::api
-  API["api.trooth.co · a separate service · six public reads, two operations behind a DPoP-bound key, MCP server at /public/mcp · contract: trooth.co/openapi.yaml"]:::api
+  API["api.trooth.co · a separate service · six public reads, two operations behind a DPoP-bound key, MCP server at mcp.trooth.co · contract: trooth.co/openapi.yaml"]:::api
   API -- "MCP tool trooth_public_trust_profile reads GET /api/network/profile" --> WEB
   API --> HOOK["Signed webhooks to endpoints a company registers in its workspace"]:::dark
 
@@ -46,7 +46,7 @@ public signing keys are listed at
    period, the freshness windows and what Trooth does not read.
 3. Anyone can read a record with no credential: through the thirteen public
    operations on trooth.co (twelve GET and one POST batch read that changes
-   nothing), or through the MCP server at `https://api.trooth.co/public/mcp`, whose `trooth_public_trust_profile` tool
+   nothing), or through the MCP server at `https://mcp.trooth.co`, whose `trooth_public_trust_profile` tool
    reads the trooth.co profile.
 4. A company that registers a webhook endpoint in its workspace receives signed
    events from api.trooth.co. Every delivery carries the Standard Webhooks headers:
