@@ -1,0 +1,19 @@
+# Turns on auto-merge (merge commit) for every Dependabot pull request, so it merges by itself once the
+# required "CI passed" check passes, like every other pull request here (2026-11-27). GitHub's documented
+# pattern: docs.github.com, "Automating Dependabot with GitHub Actions", enable auto-merge on a pull request.
+name: Dependabot auto-merge
+on: pull_request
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  auto-merge:
+    name: Dependabot auto-merge
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository_owner == 'troothllc'
+    steps:
+      - name: Turn on auto-merge
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
