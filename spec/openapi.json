@@ -747,6 +747,13 @@
               "note": {
                 "const": "This record is keyed by domain. It is about the company at this domain, not about similarly named companies.",
                 "description": "The fixed note: the record is keyed by domain."
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Added 2026-11-25. The phone number the company states for people and agents, as an international number, or null. A company's contact email is not part of the record."
               }
             }
           },
